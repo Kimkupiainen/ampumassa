@@ -142,11 +142,14 @@ document.getElementById('export-pdf').onclick = async () => {
   </form>
 
   <div id="status"></div>
-  <div style="margin: 1em 0;">
     <button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
     <button id="export-pdf" style="display:none">📄 Lataa PDF</button>
   </div>
   <div id="entries"></div>
+  <div id="footer"><footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
+  © 2025 Kim Kupiainen – Tämä sovellus on ilmainen eikä tallenna tietoja muualle kuin sinun google driveen ja selaimeesi.
+</footer></div>
+  
 
   <script>
     const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
@@ -461,8 +464,6 @@ document.getElementById('export-pdf').onclick = async () => {
 };
 
 </script>
-<footer style="margin-top: 2em; font-size: 0.9em; color: #666;">
-  © 2025 Kim Kupiainen – Tämä sovellus on ilmainen eikä tallenna tietoja muualle kuin sinun google driveen ja selaimeesi.
-</footer>
+
 </body>
 </html>
