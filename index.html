@@ -1,13 +1,8 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-  <!--
-    Tämä sovellus käyttää Google OAuth 2.0 -autentikointia client-side-koodissa.
-    CLIENT_ID näkyy lähdekoodissa, mikä on täysin hyväksyttävää ja turvallista.
-  -->
   <meta charset="UTF-8">
   <title>Ampumapäiväkirja</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body {
@@ -47,8 +42,8 @@
   <h1>Ampumapäiväkirja</h1>
   <button onclick="toggleDarkMode()">🌓 Vaihda teema</button>
   <div id="login">
-  <button id="login-btn">Kirjaudu Google-tilillä</button>
-</div>
+    <button id="login-btn">Kirjaudu Google-tilillä</button>
+  </div>
 
   <form id="log-form" style="display:none">
     <input type="date" id="date" required>
@@ -81,34 +76,20 @@
     let accessToken = null;
     let spreadsheetId = null;
     let editingRow = null;
+    let tokenClient;
 
     function toggleDarkMode() {
       document.body.classList.toggle('dark');
     }
 
-	let tokenClient;
-
-	function initGoogleAuth() {
-	  tokenClient = google.accounts.oauth2.initTokenClient({
-		client_id: CLIENT_ID,
-		scope: SCOPES,
-		callback: async (response) => {
-		  if (response.error) {
-			document.getElementById('status').textContent = 'Kirjautuminen epäonnistui.';
-			return;
-		  }
-		  accessToken = response.access_token;
-		  document.getElementById('log-form').style.display = 'block';
-		  document.getElementById('load-entries').style.display = 'inline';
-		  document.getElementById('login').innerHTML = '<p>Kirjautunut.</p>';
-		  await findOrCreateSheet();
-		}
-	  });
-
-	  document.getElementById('login-btn').onclick = () => tokenClient.requestAccessToken();
-	}
-
-	window.onload = initGoogleAuth;
+    async function getSheetIdByTitle(title) {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      const data = await res.json();
+      const sheet = data.sheets.find(s => s.properties.title === title);
+      return sheet?.properties?.sheetId;
+    }
 
     async function findOrCreateSheet() {
       const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
@@ -142,6 +123,10 @@
       const json = await createRes.json();
       spreadsheetId = json.spreadsheetId;
     }
+
+    document.getElementById('login-btn').onclick = () => {
+      tokenClient.requestAccessToken();
+    };
 
     document.getElementById('log-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -207,11 +192,17 @@
     };
 
     window.deleteRow = async (index) => {
+      const sheetId = await getSheetIdByTitle(SHEET_TAB);
+      if (!sheetId) {
+        document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
+        return;
+      }
+
       const request = {
         requests: [{
           deleteDimension: {
             range: {
-              sheetId: 0,
+              sheetId: sheetId,
               dimension: 'ROWS',
               startIndex: index,
               endIndex: index + 1
@@ -219,15 +210,33 @@
           }
         }]
       };
+
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(request)
       });
+
       document.getElementById('status').textContent = 'Rivi poistettu.';
+      document.getElementById('load-entries').click();
     };
 
-    window.onload = initGoogleAuth;
+    window.onload = () => {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: async (response) => {
+          accessToken = response.access_token;
+          document.getElementById('log-form').style.display = 'block';
+          document.getElementById('load-entries').style.display = 'inline';
+          document.getElementById('login').innerHTML = '<p>Kirjautunut.</p>';
+          await findOrCreateSheet();
+        }
+      });
+    };
   </script>
 </body>
 </html>
