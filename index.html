@@ -115,10 +115,19 @@ document.getElementById('export-pdf').onclick = async () => {
 </script>
 </head>
 <body class="dark">
-  <h1>Ampumapäiväkirja</h1>
+  <h1>AMPUMASSA<br> Ampumapäiväkirja netissä</h1>
   
   <div id="login"><button id="login-btn">Kirjaudu Google-tilillä</button></div>
-
+<div id="intro">
+  <p>
+    <strong>AMPUMASSA</strong> on henkilökohtainen työkalu ammuntojen seurantaan.
+    Kirjaa ylös päivämäärä, ase, laukausmäärät, paikka ja vapaamuotoiset huomiot jokaiselta ampumakerralta.
+  </p>
+  <p>
+    Tiedot tallennetaan omaan Google Driveesi, ja niitä voi tarkastella sekä PDF-muodossa että selaimessa.
+    Sovellus toimii myös mobiililaitteilla, ja oppii automaattisesti aiemmin käytetyt aseet ja paikat. Tietojasi ei kerätä sivuston hallinnoijan toimesta eikä luovuteta koskaan kolmansille osapuolille tarpeettomasti.
+  </p>
+</div>
   <form id="log-form" style="display:none">
     <input type="date" id="date" required>
     <input type="text" id="event" placeholder="Tapahtuma" required>
@@ -508,7 +517,7 @@ document.getElementById('export-pdf').onclick = async () => {
 
 </script>
 <footer id="app-footer">
-  © 2025 Kim Kupiainen – Tämä sivu tallentaa tietoja ainoastaan sinun Google Driveen ja selaimen muistiin.
+  © 2025 Kim Kupiainen – Kaikki oikeudet pidätetään.
 </footer>
 </body>
 </html>
