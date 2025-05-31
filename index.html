@@ -122,7 +122,8 @@ document.getElementById('export-pdf').onclick = async () => {
   <form id="log-form" style="display:none">
     <input type="date" id="date" required>
     <input type="text" id="event" placeholder="Tapahtuma" required>
-    <input type="text" id="weapon" placeholder="Ase / kaliiperi" required>
+	<input list="weapons" id="weapon" placeholder="Ase / kaliiperi" required>
+	<datalist id="weapons"></datalist>
     <select id="tt" required>
       <option value="">Valitse toimintatapa</option>
       <option value="TT1">TT1 – kertatuli ilman lipasta</option>
@@ -130,7 +131,8 @@ document.getElementById('export-pdf').onclick = async () => {
       <option value="TT3">TT3 – itselataava kertatuli</option>
       <option value="TT4">TT4 – sarjatuli</option>
     </select>
-    <input type="text" id="location" placeholder="Paikka" required>
+	<input list="locations" id="location" placeholder="Paikka" required>
+	<datalist id="locations"></datalist>
     <input type="number" id="rounds" placeholder="Laukaukset" required>
     <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
     <div>
@@ -160,6 +162,21 @@ document.getElementById('export-pdf').onclick = async () => {
       document.body.classList.toggle('dark');
     }
 
+    function saveToLocalStorage(key, value) {
+      if (!value) return;
+      let existing = JSON.parse(localStorage.getItem(key) || "[]");
+      if (!existing.includes(value)) {
+        existing.push(value);
+        localStorage.setItem(key, JSON.stringify(existing));
+      }
+    }
+	
+	function populateDatalist(id, key) {
+      const list = document.getElementById(id);
+      const items = JSON.parse(localStorage.getItem(key) || "[]");
+      list.innerHTML = items.map(val => `<option value="\${val}">`).join('');
+    }
+	
     function cancelEdit() {
       document.getElementById('log-form').reset();
       editingRow = null;
@@ -249,6 +266,8 @@ document.getElementById('export-pdf').onclick = async () => {
           document.getElementById('rounds').value,
           document.getElementById('notes').value
         ];
+		    saveToLocalStorage("weapons", weapon.value);
+			saveToLocalStorage("locations", location.value);
         if (editingRow) {
           const range = `${SHEET_TAB}!A${editingRow + 1}`;
           await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`, {
