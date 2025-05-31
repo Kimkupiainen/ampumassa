@@ -140,14 +140,15 @@ document.getElementById('export-pdf').onclick = async () => {
       <button type="button" onclick="cancelEdit()">Peru muokkaus</button>
     </div>
 	  <div id="status"></div>
-    <div>
-	<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
-    <button id="export-pdf" style="display:none">📄 Lataa PDF</button>
-	</div>
   </form>
 
 
-  <div id="entries"></div>
+  <div id="entries">
+      <div>
+	<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
+    <button id="export-pdf" style="display:none">📄 Lataa PDF</button>
+	</div>
+  </div>
 	  <!-- Loader -->
 	<div id="loader" style="display: none;">
 	  <div class="spinner"></div>
