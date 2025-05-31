@@ -316,7 +316,7 @@ document.getElementById('export-pdf').onclick = async () => {
         const data = await res.json();
         const rows = data.values.slice(1);
 		const container = document.getElementById('entries');
-		container.innerHTML = ''; // tyhjennä ennen uudelleenkäyttöä
+		container.innerHTML = '';
 
 		rows.forEach((r, i) => {
 		  const card = document.createElement('div');
@@ -326,21 +326,22 @@ document.getElementById('export-pdf').onclick = async () => {
 		  title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
 		  card.appendChild(title);
 
-		  const weapon = document.createElement('p');
-		  weapon.innerHTML = `<strong>Ase:</strong> ${escapeHTML(r[2] || '')} (${escapeHTML(r[3] || '')})`;
-		  card.appendChild(weapon);
+			const weapon = document.createElement('p');
+			weapon.textContent = `Ase: ${r[2] || ''} (${r[3] || ''})`;
+			card.appendChild(weapon);
 
-		  const location = document.createElement('p');
-		  location.innerHTML = `<strong>Paikka:</strong> ${escapeHTML(r[4] || '')}`;
-		  card.appendChild(location);
+			const location = document.createElement('p');
+			location.textContent = `Paikka: ${r[4] || ''}`;
+			card.appendChild(location);
 
-		  const rounds = document.createElement('p');
-		  rounds.innerHTML = `<strong>Laukaukset:</strong> ${escapeHTML(r[5] || '')}`;
-		  card.appendChild(rounds);
+			const rounds = document.createElement('p');
+			rounds.textContent = `Laukaukset: ${r[5] || ''}`;
+			card.appendChild(rounds);
 
-		  const notes = document.createElement('p');
-		  notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`;
-		  card.appendChild(notes);
+			const notes = document.createElement('p');
+			notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`; // tämä vaatii <br>
+			card.appendChild(notes);
+
 
 		  const actions = document.createElement('div');
 		  actions.className = 'actions';
