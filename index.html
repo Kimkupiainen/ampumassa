@@ -1,24 +1,14 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-  <!--
-    Tämä sovellus käyttää Google OAuth 2.0 -autentikointia client-side-koodissa.
-    CLIENT_ID näkyy lähdekoodissa, mikä on täysin hyväksyttävää ja turvallista.
-
-    Miksi tämä ei ole tietoturvariski?
-    - Client ID on julkinen tunniste, ei salainen avain.
-    - Käyttäjän kirjautuminen ja luvananto vaaditaan aina.
-    - Sovellus pyytää vain rajatun "drive.file" -oikeuden (voi käsitellä vain itse luomiaan tiedostoja).
-    - Älä koskaan sisällytä client_secret-arvoja client-side-koodiin.
-  -->
   <meta charset="UTF-8">
-  <title>Ampumapäiväkirja</title>
+  <title>Ampumapäiväkirja (Sheets)</title>
   <script src="https://apis.google.com/js/api.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Ampumassa.fi, laiskan ampujan ampumapäiväkirja</h1>
+  <h1>Ampumapäiväkirja</h1>
   <div id="login"></div>
 
   <form id="log-form" style="display:none">
@@ -27,7 +17,7 @@
     <input type="text" id="weapon" placeholder="Ase / kaliiperi" required>
     <input type="number" id="rounds" placeholder="Laukaukset" required>
     <textarea id="notes" placeholder="Huomiot / fiilikset"></textarea>
-    <button type="submit">Tallenna Driveen</button>
+    <button type="submit">Tallenna Sheettiin</button>
   </form>
 
   <button id="toggle-dark" style="display:none">Vaihda teema</button>
@@ -37,15 +27,14 @@
 
   <script>
     const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    const FILE_NAME = 'ampumapaivakirja.json';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+    const SHEET_NAME = 'ampumapaivakirja';
 
-    let tokenClient;
     let accessToken = null;
-    let fileId = null;
+    let spreadsheetId = null;
 
     function initGoogleAuth() {
-      tokenClient = google.accounts.oauth2.initTokenClient({
+      google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
         callback: async (tokenResponse) => {
@@ -55,59 +44,75 @@
             document.getElementById('toggle-dark').style.display = 'inline-block';
             document.getElementById('load-entries').style.display = 'inline-block';
             document.getElementById('login').innerHTML = '<p>Kirjautunut.</p>';
-            await findOrCreateLogFile();
+            await findOrCreateSheet();
           }
-        },
-      });
-
-      const loginBtn = document.createElement('button');
-      loginBtn.textContent = 'Kirjaudu Google-tilillä';
-      loginBtn.onclick = () => tokenClient.requestAccessToken();
-      document.getElementById('login').appendChild(loginBtn);
+        }
+      }).requestAccessToken();
     }
 
-    async function findOrCreateLogFile() {
-      const query = `name='${FILE_NAME}' and trashed=false`;
+    async function findOrCreateSheet() {
+      const query = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
       const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`, {
         headers: { Authorization: 'Bearer ' + accessToken }
       });
       const data = await res.json();
       if (data.files && data.files.length > 0) {
-        fileId = data.files[0].id;
+        spreadsheetId = data.files[0].id;
       } else {
-        const metadata = { name: FILE_NAME, mimeType: 'application/json' };
-        const blob = new Blob([JSON.stringify([])], { type: 'application/json' });
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', blob);
-        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
           method: 'POST',
-          headers: { Authorization: 'Bearer ' + accessToken },
-          body: form
+          headers: {
+            Authorization: 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            properties: { title: SHEET_NAME },
+            sheets: [{ properties: { title: 'Merkinnät' } }]
+          })
         });
-        const result = await response.json();
-        fileId = result.id;
+        const sheet = await createRes.json();
+        spreadsheetId = sheet.spreadsheetId;
       }
     }
 
-    async function uploadLogEntry(entry) {
-      const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-      let entries = await getRes.json();
-      if (!Array.isArray(entries)) entries = [];
-      entries.push(entry);
-
-      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-        method: 'PATCH',
+    async function uploadToSheet(entry) {
+      const values = [[entry.date, entry.location, entry.weapon, entry.rounds, entry.notes]];
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Merkinnät!A1:append?valueInputOption=USER_ENTERED`, {
+        method: 'POST',
         headers: {
           Authorization: 'Bearer ' + accessToken,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(entries)
+        body: JSON.stringify({ values })
       });
 
-      document.getElementById('status').textContent = 'Tiedosto päivitetty: ' + FILE_NAME;
+      document.getElementById('status').textContent = 'Tallennettu taulukkoon!';
+    }
+
+    async function loadEntriesFromSheet() {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Merkinnät`, {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      const data = await res.json();
+      const rows = data.values || [];
+      const container = document.getElementById('entries');
+      container.innerHTML = '<h2>Merkinnät</h2>';
+      if (rows.length <= 1) {
+        container.innerHTML += '<p>Ei aiempia merkintöjä.</p>';
+        return;
+      }
+      rows.slice(1).reverse().forEach(row => {
+        const [date, location, weapon, rounds, notes] = row;
+        const el = document.createElement('div');
+        el.style.borderBottom = '1px solid #ccc';
+        el.style.padding = '0.5em 0';
+        el.innerHTML = `
+          <strong>${date}</strong> – ${location}<br>
+          ${weapon}, ${rounds} laukausta<br>
+          <em>${notes || 'Ei merkintöjä'}</em>
+        `;
+        container.appendChild(el);
+      });
     }
 
     document.getElementById('log-form').addEventListener('submit', async (e) => {
@@ -119,39 +124,20 @@
         rounds: document.getElementById('rounds').value,
         notes: document.getElementById('notes').value
       };
-      await uploadLogEntry(log);
+      await uploadToSheet(log);
     });
 
+    document.getElementById('load-entries').addEventListener('click', loadEntriesFromSheet);
     document.getElementById('toggle-dark').addEventListener('click', () => {
       document.body.classList.toggle('dark-mode');
     });
 
-    document.getElementById('load-entries').addEventListener('click', async () => {
-      if (!fileId) await findOrCreateLogFile();
-      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-      const data = await res.json();
-      const container = document.getElementById('entries');
-      container.innerHTML = '<h2>Merkinnät</h2>';
-      if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML += '<p>Ei aiempia merkintöjä.</p>';
-        return;
-      }
-      data.reverse().forEach(entry => {
-        const el = document.createElement('div');
-        el.style.borderBottom = '1px solid #ccc';
-        el.style.padding = '0.5em 0';
-        el.innerHTML = `
-          <strong>${entry.date}</strong> – ${entry.location}<br>
-          ${entry.weapon}, ${entry.rounds} laukausta<br>
-          <em>${entry.notes || 'Ei merkintöjä'}</em>
-        `;
-        container.appendChild(el);
-      });
-    });
-
-    window.onload = initGoogleAuth;
+    window.onload = () => {
+      const loginBtn = document.createElement('button');
+      loginBtn.textContent = 'Kirjaudu Google-tilillä';
+      loginBtn.onclick = initGoogleAuth;
+      document.getElementById('login').appendChild(loginBtn);
+    };
   </script>
 </body>
 </html>
