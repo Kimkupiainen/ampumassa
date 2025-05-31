@@ -24,6 +24,7 @@ body::before {
   z-index: -1;
   background-color: transparent;
   transition: background-color 1.0s ease;
+  padding: 1.5rem;
 }
 :root {
   --bg: #f9f9f9;
@@ -92,9 +93,14 @@ button {
   font-size: 1.8rem;
   cursor: pointer;
   width: 100%;
+  display: block;
   margin-bottom: 1em;
 }
-
+.actions button {
+  min-height: 48px;
+  font-size: 1.2rem;
+  padding: 0.8em 1.2em;
+}
 button:hover {
   background: #0051a3;
 }
