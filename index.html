@@ -174,7 +174,8 @@ document.getElementById('export-pdf').onclick = async () => {
 	function populateDatalist(id, key) {
       const list = document.getElementById(id);
       const items = JSON.parse(localStorage.getItem(key) || "[]");
-      list.innerHTML = items.map(val => `<option value="\${val}">`).join('');
+	  items.sort()
+      list.innerHTML = items.map(val => `<option value="${val}">`).join('');
     }
 	
     function cancelEdit() {
@@ -246,8 +247,10 @@ document.getElementById('export-pdf').onclick = async () => {
           document.getElementById('log-form').style.display = 'block';
           document.getElementById('load-entries').style.display = 'inline';
           document.getElementById('export-pdf').style.display = 'inline';
-          document.getElementById('login').innerHTML = '<p>Kirjautunut.</p>';
+          document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           await findOrCreateSheet();
+		  populateDatalist("weapons", "weapons");
+          populateDatalist("locations", "locations");
         }
       });
 
