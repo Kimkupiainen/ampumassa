@@ -4,9 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Ampumapäiväkirja</title>
-  <script src="https://accounts.google.com/gsi/client" async defer>
-
-</script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
 </script>
@@ -316,6 +314,7 @@
 		}
 
 		document.getElementById('load-entries').onclick = loadEntries;
+		}; 
 
       window.editRow = async (index) => {
         const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
