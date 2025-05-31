@@ -1,12 +1,30 @@
 
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--fg);
   margin: 0;
   padding: 0;
+  background-image: url('taustakuva.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed; /* <-- tämä tekee sen "parallax scroll" -efektin */
+  color: var(--fg);
+  font-family: sans-serif;
+  font
+  position: relative;
+  min-height: 100vh;
 }
-
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background-color: transparent;
+  transition: background-color 1.0s ease;
+}
 :root {
   --bg: #f9f9f9;
   --fg: #111;
@@ -16,6 +34,9 @@ body {
   --danger: #c62828;
 }
 
+body.dark::before {
+  background-color: rgba(0, 0, 0, 0.8); /* tumma overlay dark modessa */
+}
 body.dark {
   --bg: #121212;
   --fg: #eee;
@@ -29,6 +50,7 @@ h1 {
   padding: 1rem;
   margin: 0;
   font-size: 1.6rem;
+  color: var(--fg); /* tämä ohjaa värin automaattisesti dark/light -tilaan */
 }
 
 #login, #status, #entries, form, .entry-card {
@@ -142,4 +164,22 @@ th, td {
   .entry-card p {
     font-size: 1.15rem;
   }
+}
+#app-footer {
+  width: 100%;
+  padding: 1.2em;
+  text-align: center;
+  font-size: 0.9em;
+  color: var(--fg);
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(5px);
+  margin-top: 3em;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+}
+
+body.dark #app-footer {
+  background-color: rgba(0, 0, 0, 0.7);
 }
