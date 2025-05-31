@@ -255,7 +255,7 @@
         document.getElementById('status').textContent = 'Merkintä tallennettu.';
       });
 
-				async function loadEntries() {
+		  window.loadEntries = async function () {
 		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
 			headers: { Authorization: 'Bearer ' + accessToken }
 		  });
