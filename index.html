@@ -49,12 +49,13 @@
   </form>
 
 
-  <div id="entries">
-      <div>
-	<button id="load-entries">📋 Näytä merkinnät</button>
-    <button id="export-pdf">📄 Lataa PDF</button>
+	<div id="entries">
+	  <div>
+		<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
+		<button id="export-pdf" style="display:none">📄 Lataa PDF</button>
+	  </div>
+	  <div id="entry-cards"></div> <!-- <- tämä lisättiin -->
 	</div>
-  </div>
 	  <!-- Loader -->
 	<div id="loader" style="display: none;">
 	  <div class="spinner"></div>
@@ -256,7 +257,7 @@
         document.getElementById('status').textContent = 'Merkintä tallennettu.';
       });
 
-		document.getElementById('load-entries').onclick = async () => {
+				async function loadEntries() {
 		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
 			headers: { Authorization: 'Bearer ' + accessToken }
 		  });
@@ -265,11 +266,11 @@
 		  const totalRows = rows.length;
 		  rows.reverse();
 
-		  const container = document.getElementById('entries');
+		  const container = document.getElementById('entry-cards'); // <- tämä on nyt uusi alue
 		  container.innerHTML = '';
 
 		  rows.forEach((r, i) => {
-			const sheetRowIndex = totalRows - i; // +1 koska header oli slice(1):llä pois
+			const sheetRowIndex = totalRows - i;
 
 			const card = document.createElement('div');
 			card.className = 'entry-card';
@@ -312,8 +313,9 @@
 			card.appendChild(actions);
 			container.appendChild(card);
 		  });
-		};
+		}
 
+		document.getElementById('load-entries').onclick = loadEntries;
 
       window.editRow = async (index) => {
         const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
@@ -329,36 +331,38 @@
         window.scrollTo(0, 0);
       };
 
-      window.deleteRow = async (index) => {
-        const sheetId = await getSheetIdByTitle(SHEET_TAB);
-        if (!sheetId) {
-          document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
-          return;
-        }
-        const request = {
-          requests: [{
-            deleteDimension: {
-              range: {
-                sheetId: sheetId,
-                dimension: 'ROWS',
-                startIndex: index,
-                endIndex: index + 1
-              }
-            }
-          }]
-        };
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(request)
-        });
-        document.getElementById('status').textContent = 'Rivi poistettu.';
-        document.getElementById('load-entries').click();
-      };
-    };
+		window.deleteRow = async (index) => {
+		  const sheetId = await getSheetIdByTitle(SHEET_TAB);
+		  if (!sheetId) {
+			document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
+			return;
+		  }
+
+		  const request = {
+			requests: [{
+			  deleteDimension: {
+				range: {
+				  sheetId: sheetId,
+				  dimension: 'ROWS',
+				  startIndex: index,
+				  endIndex: index + 1
+				}
+			  }
+			}]
+		  };
+
+		  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+			method: 'POST',
+			headers: {
+			  Authorization: 'Bearer ' + accessToken,
+			  'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(request)
+		  });
+
+		  document.getElementById('status').textContent = 'Rivi poistettu.';
+		  await loadEntries(); // <- päivitetään näkymä suoraan
+		};
   
 document.getElementById('export-pdf').onclick = async () => {
   const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
