@@ -330,12 +330,16 @@
         window.scrollTo(0, 0);
       };
 
-		window.deleteRow = async (index) => {
+		window.deleteRow = async function(index, cardElement) {
 		  const sheetId = await getSheetIdByTitle(SHEET_TAB);
 		  if (!sheetId) {
 			document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
 			return;
 		  }
+
+		  // Harmaannuta kortti ja näytä tila
+		  cardElement.style.opacity = '0.5';
+		  cardElement.querySelector('.actions').innerHTML = '<em>Poistetaan...</em>';
 
 		  const request = {
 			requests: [{
@@ -359,8 +363,10 @@
 			body: JSON.stringify(request)
 		  });
 
+		  // Poista kortti näkyvistä heti
+		  cardElement.remove();
+
 		  document.getElementById('status').textContent = 'Rivi poistettu.';
-		  await loadEntries(); // <- päivitetään näkymä suoraan
 		};
   
 document.getElementById('export-pdf').onclick = async () => {
