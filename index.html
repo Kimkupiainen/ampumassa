@@ -59,17 +59,32 @@
       if (data.files && data.files.length > 0) {
         spreadsheetId = data.files[0].id;
       } else {
-        const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            properties: { title: SHEET_NAME },
-            sheets: [{ properties: { title: 'Merkinnät' } }]
-          })
-        });
+			const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+			  method: 'POST',
+			  headers: {
+				Authorization: 'Bearer ' + accessToken,
+				'Content-Type': 'application/json'
+			  },
+			  body: JSON.stringify({
+				properties: { title: SHEET_NAME },
+				sheets: [{
+				  properties: { title: 'Merkinnät' },
+				  data: [{
+					startRow: 0,
+					startColumn: 0,
+					rowData: [{
+					  values: [
+						{ userEnteredValue: { stringValue: 'Päivämäärä' } },
+						{ userEnteredValue: { stringValue: 'Paikka' } },
+						{ userEnteredValue: { stringValue: 'Ase' } },
+						{ userEnteredValue: { stringValue: 'Laukaukset' } },
+						{ userEnteredValue: { stringValue: 'Huomiot' } }
+					  ]
+					}]
+				  }]
+				}]
+			  })
+			});
         const sheet = await createRes.json();
         spreadsheetId = sheet.spreadsheetId;
       }
