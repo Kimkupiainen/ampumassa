@@ -30,6 +30,33 @@ document.getElementById('export-pdf').onclick = async () => {
   doc.save("ampumapaivakirja.pdf");
 };
 
+
+document.getElementById('export-pdf').onclick = async () => {
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const data = await res.json();
+  const rows = data.values;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text("Ampumapäiväkirja", 10, 10);
+
+  let y = 20;
+  rows.forEach((r, i) => {
+    const line = r.join(" | ");
+    doc.text(line, 10, y);
+    y += 8;
+    if (y > 280) {
+      doc.addPage();
+      y = 10;
+    }
+  });
+
+  doc.save("ampumapaivakirja.pdf");
+};
+
 </script>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -40,6 +67,33 @@ document.getElementById('export-pdf').onclick = async () => {
   const data = await res.json();
   const rows = data.values;
 
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text("Ampumapäiväkirja", 10, 10);
+
+  let y = 20;
+  rows.forEach((r, i) => {
+    const line = r.join(" | ");
+    doc.text(line, 10, y);
+    y += 8;
+    if (y > 280) {
+      doc.addPage();
+      y = 10;
+    }
+  });
+
+  doc.save("ampumapaivakirja.pdf");
+};
+
+
+document.getElementById('export-pdf').onclick = async () => {
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const data = await res.json();
+  const rows = data.values;
+
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(14);
   doc.text("Ampumapäiväkirja", 10, 10);
@@ -288,6 +342,33 @@ document.getElementById('export-pdf').onclick = async () => {
   const data = await res.json();
   const rows = data.values;
 
+  const doc = new jsPDF();
+  doc.setFontSize(14);
+  doc.text("Ampumapäiväkirja", 10, 10);
+
+  let y = 20;
+  rows.forEach((r, i) => {
+    const line = r.join(" | ");
+    doc.text(line, 10, y);
+    y += 8;
+    if (y > 280) {
+      doc.addPage();
+      y = 10;
+    }
+  });
+
+  doc.save("ampumapaivakirja.pdf");
+};
+
+
+document.getElementById('export-pdf').onclick = async () => {
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const data = await res.json();
+  const rows = data.values;
+
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(14);
   doc.text("Ampumapäiväkirja", 10, 10);
