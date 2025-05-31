@@ -188,6 +188,15 @@ document.getElementById('export-pdf').onclick = async () => {
       editingRow = null;
       document.getElementById('status').textContent = 'Muokkaus peruttu.';
     }
+	function escapeHTML(str) {
+	  return str.replace(/[&<>"']/g, match => ({
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		'"': '&quot;',
+		"'": '&#039;'
+	  }[match]));
+	}
 
     async function getSheetIdByTitle(title) {
       const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
@@ -302,19 +311,19 @@ document.getElementById('export-pdf').onclick = async () => {
         const data = await res.json();
         const rows = data.values.slice(1);
         const container = document.getElementById('entries');
-        container.innerHTML = rows.map((r, i) => `
-          <div class="entry-card">
-            <h3>${r[0] || ''} – ${r[1] || ''}</h3>
-            <p><strong>Ase:</strong> ${r[2] || ''} (${r[3] || ''})</p>
-            <p><strong>Paikka:</strong> ${r[4] || ''}</p>
-            <p><strong>Laukaukset:</strong> ${r[5] || ''}</p>
-            <p><strong>Kuvaus:</strong><br>${r[6] || ''}</p>
-            <div class="actions">
-              <button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
-              <button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
-            </div>
-          </div>
-        `).join('');
+		container.innerHTML = rows.map((r, i) => `
+		  <div class="entry-card">
+			<h3>${escapeHTML(r[0] || '')} – ${escapeHTML(r[1] || '')}</h3>
+			<p><strong>Ase:</strong> ${escapeHTML(r[2] || '')} (${escapeHTML(r[3] || '')})</p>
+			<p><strong>Paikka:</strong> ${escapeHTML(r[4] || '')}</p>
+			<p><strong>Laukaukset:</strong> ${escapeHTML(r[5] || '')}</p>
+			<p><strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}</p>
+			<div class="actions">
+			  <button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
+			  <button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
+			</div>
+		  </div>
+		`).join('');
       };
 
       window.editRow = async (index) => {
