@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>Ampumapäiväkirja</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Ampumapäiväkirja</h1>
   <button onclick="toggleDarkMode()">🌓 Vaihda teema</button>
+
   <div id="login">
     <button id="login-btn">Kirjaudu Google-tilillä</button>
   </div>
@@ -27,18 +29,18 @@
     <input type="text" id="location" placeholder="Paikka" required>
     <input type="number" id="rounds" placeholder="Laukaukset" required>
     <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
-    <button type="submit">Tallenna merkintä</button>
+    <button class="save" type="submit">Tallenna merkintä</button>
   </form>
 
   <div>
-    <button id="load-entries" style="display:none">Näytä merkinnät</button>
+    <button id="load-entries" style="display:none">📖 Näytä merkinnät</button>
     <div id="status"></div>
     <div id="entries"></div>
   </div>
 
   <script>
     const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly';
     const SHEET_NAME = 'ampumapaivakirja';
     const SHEET_TAB = 'Merkinnät';
     let accessToken = null;
@@ -60,55 +62,48 @@
     }
 
     async function findOrCreateSheet() {
-	  // 1. Tarkista onko Sheets-tyyppinen tiedosto nimellä ampumapaivakirja
-	  const driveQuery = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
-	  const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(driveQuery)}&fields=files(id,name)`, {
-		headers: { Authorization: 'Bearer ' + accessToken }
-	  });
-	  const driveData = await driveRes.json();
+      const driveQuery = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+      const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(driveQuery)}&fields=files(id,name)`, {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      const driveData = await driveRes.json();
 
-	  if (driveData.files && driveData.files.length > 0) {
-		spreadsheetId = driveData.files[0].id;
-		return;
-	  }
+      if (driveData.files && driveData.files.length > 0) {
+        spreadsheetId = driveData.files[0].id;
+        return;
+      }
 
-	  // 2. Ei löytynyt → luodaan uusi Sheet
-	  const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-		method: 'POST',
-		headers: {
-		  Authorization: 'Bearer ' + accessToken,
-		  'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({
-		  properties: { title: SHEET_NAME },
-		  sheets: [{
-			properties: { title: SHEET_TAB },
-			data: [{
-			  startRow: 0,
-			  startColumn: 0,
-			  rowData: [{
-				values: [
-				  { userEnteredValue: { stringValue: 'Päivämäärä' } },
-				  { userEnteredValue: { stringValue: 'Tapahtuma' } },
-				  { userEnteredValue: { stringValue: 'Ase' } },
-				  { userEnteredValue: { stringValue: 'Toimintatapa' } },
-				  { userEnteredValue: { stringValue: 'Paikka' } },
-				  { userEnteredValue: { stringValue: 'Laukaukset' } },
-				  { userEnteredValue: { stringValue: 'Kuvaus' } }
-				]
-			  }]
-			}]
-		  }]
-		})
-	  });
-	  const json = await createRes.json();
-	  spreadsheetId = json.spreadsheetId;
-	}
-
-
-    document.getElementById('login-btn').onclick = () => {
-      tokenClient.requestAccessToken();
-    };
+      const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          properties: { title: SHEET_NAME },
+          sheets: [{
+            properties: { title: SHEET_TAB },
+            data: [{
+              startRow: 0,
+              startColumn: 0,
+              rowData: [{
+                values: [
+                  { userEnteredValue: { stringValue: 'Päivämäärä' } },
+                  { userEnteredValue: { stringValue: 'Tapahtuma' } },
+                  { userEnteredValue: { stringValue: 'Ase' } },
+                  { userEnteredValue: { stringValue: 'Toimintatapa' } },
+                  { userEnteredValue: { stringValue: 'Paikka' } },
+                  { userEnteredValue: { stringValue: 'Laukaukset' } },
+                  { userEnteredValue: { stringValue: 'Kuvaus' } }
+                ]
+              }]
+            }]
+          }]
+        })
+      });
+      const json = await createRes.json();
+      spreadsheetId = json.spreadsheetId;
+    }
 
     document.getElementById('log-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -122,24 +117,21 @@
         document.getElementById('notes').value
       ];
 
-      if (editingRow) {
-        const range = `${SHEET_TAB}!A${editingRow + 1}`;
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`, {
-          method: 'PUT',
-          headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ range, values: [row] })
-        });
-        editingRow = null;
-      } else {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A1:append?valueInputOption=RAW`, {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ values: [row] })
-        });
-      }
+      const range = `${SHEET_TAB}!A${editingRow + 1}`;
+      const method = editingRow ? 'PUT' : 'POST';
+      const url = editingRow
+        ? `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`
+        : `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A1:append?valueInputOption=RAW`;
 
+      await fetch(url, {
+        method,
+        headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingRow ? { range, values: [row] } : { values: [row] })
+      });
+
+      editingRow = null;
       document.getElementById('log-form').reset();
-      document.getElementById('status').textContent = 'Merkintä tallennettu.';
+      setStatus('Merkintä tallennettu.', true);
     });
 
     document.getElementById('load-entries').onclick = async () => {
@@ -147,35 +139,39 @@
         headers: { Authorization: 'Bearer ' + accessToken }
       });
       const data = await res.json();
-      const rows = data.values.slice(1); // skip header
+      const rows = data.values.slice(1);
       const container = document.getElementById('entries');
-		if (window.innerWidth >= 600) {
-		  // Desktop: taulukko
-		  container.innerHTML = `<table><thead><tr><th>Päivämäärä</th><th>Tapahtuma</th><th>Ase</th><th>TT</th><th>Paikka</th><th>Laukaukset</th><th>Kuvaus</th><th>Toiminnot</th></tr></thead><tbody>
-			${rows.map((r, i) => `<tr>
-			  ${r.map(cell => `<td>${cell}</td>`).join('')}
-			  <td class="actions">
-				<button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
-				<button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
-			  </td>
-			</tr>`).join('')}
-		  </tbody></table>`;
-		} else {
-		  // Mobile: cards
-		  container.innerHTML = rows.map((r, i) => `
-			<div class="entry-card">
-			  <h3>${r[0] || ''} – ${r[1] || ''}</h3>
-			  <p><strong>Ase:</strong> ${r[2] || ''} (${r[3] || ''})</p>
-			  <p><strong>Paikka:</strong> ${r[4] || ''}</p>
-			  <p><strong>Laukaukset:</strong> ${r[5] || ''}</p>
-			  <p><strong>Kuvaus:</strong><br>${r[6] || ''}</p>
-			  <div class="actions">
-				<button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
-				<button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
-			  </div>
-			</div>
-		  `).join('');
-		}
+
+      if (window.innerWidth >= 600) {
+        container.innerHTML = `<table><thead><tr><th>Päivämäärä</th><th>Tapahtuma</th><th>Ase</th><th>TT</th><th>Paikka</th><th>Laukaukset</th><th>Kuvaus</th><th>Toiminnot</th></tr></thead><tbody>
+        ${rows.map((r, i) => `<tr>
+          ${r.map(cell => `<td>${cell}</td>`).join('')}
+          <td class="actions">
+            <button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
+            <button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
+          </td>
+        </tr>`).join('')}</tbody></table>`;
+      } else {
+        container.innerHTML = rows.map((r, i) => `
+          <div class="entry-card">
+            <h3>${r[0] || ''} – ${r[1] || ''}</h3>
+            <p><strong>Ase:</strong> ${r[2] || ''} (${r[3] || ''})</p>
+            <p><strong>Paikka:</strong> ${r[4] || ''}</p>
+            <p><strong>Laukaukset:</strong> ${r[5] || ''}</p>
+            <p><strong>Kuvaus:</strong><br>${r[6] || ''}</p>
+            <div class="actions">
+              <button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
+              <button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
+            </div>
+          </div>`).join('');
+      }
+    };
+
+    function setStatus(msg, success = true) {
+      const status = document.getElementById('status');
+      status.textContent = msg;
+      status.className = success ? 'success' : 'error';
+    }
 
     window.editRow = async (index) => {
       const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
@@ -192,34 +188,19 @@
 
     window.deleteRow = async (index) => {
       const sheetId = await getSheetIdByTitle(SHEET_TAB);
-      if (!sheetId) {
-        document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
-        return;
-      }
-
       const request = {
         requests: [{
           deleteDimension: {
-            range: {
-              sheetId: sheetId,
-              dimension: 'ROWS',
-              startIndex: index,
-              endIndex: index + 1
-            }
+            range: { sheetId, dimension: 'ROWS', startIndex: index, endIndex: index + 1 }
           }
         }]
       };
-
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
         method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
-        },
+        headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
         body: JSON.stringify(request)
       });
-
-      document.getElementById('status').textContent = 'Rivi poistettu.';
+      setStatus('Rivi poistettu.', true);
       document.getElementById('load-entries').click();
     };
 
@@ -228,6 +209,10 @@
         client_id: CLIENT_ID,
         scope: SCOPES,
         callback: async (response) => {
+          if (!response.access_token) {
+            setStatus('Kirjautuminen epäonnistui.', false);
+            return;
+          }
           accessToken = response.access_token;
           document.getElementById('log-form').style.display = 'block';
           document.getElementById('load-entries').style.display = 'inline';
@@ -235,6 +220,10 @@
           await findOrCreateSheet();
         }
       });
+
+      document.getElementById('login-btn').onclick = () => {
+        tokenClient.requestAccessToken();
+      };
     };
   </script>
 </body>
