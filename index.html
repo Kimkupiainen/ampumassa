@@ -163,13 +163,18 @@ document.getElementById('export-pdf').onclick = async () => {
     }
 
     function saveToLocalStorage(key, value) {
-      if (!value) return;
-      let existing = JSON.parse(localStorage.getItem(key) || "[]");
-      if (!existing.includes(value)) {
-        existing.push(value);
-        localStorage.setItem(key, JSON.stringify(existing));
-      }
-    }
+	  if (!value) return;
+	  let existing = JSON.parse(localStorage.getItem(key) || "[]");
+
+	  // Normalize existing for comparison only
+	  const normalized = existing.map(v => v.trim().toLowerCase());
+	  const candidate = value.trim().toLowerCase();
+
+	  if (!normalized.includes(candidate)) {
+		existing.push(value.trim()); // keep original casing for UX
+		localStorage.setItem(key, JSON.stringify(existing));
+	  }
+	}
 	
 	function populateDatalist(id, key) {
       const list = document.getElementById(id);
