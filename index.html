@@ -376,6 +376,7 @@
 		  const data = await res.json();
 		  const rows = data.values;
 
+		  const { jsPDF } = window.jspdf;
 		  const doc = new jsPDF();
 		  const lineHeight = 7;
 		  let y = 20;
