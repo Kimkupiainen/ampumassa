@@ -370,7 +370,7 @@ document.getElementById('export-pdf').onclick = async () => {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  doc.setFontSize(14);
+  doc.setFontSize(10);
   doc.text("Ampumapäiväkirja", 10, 10);
 
   let y = 20;
