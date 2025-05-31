@@ -3,8 +3,8 @@ body {
   font-family: 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--fg);
-  padding: 1rem;
   margin: 0;
+  padding: 0;
 }
 
 :root {
@@ -25,10 +25,26 @@ body.dark {
   --danger: #ef5350;
 }
 
-input, select, textarea, button {
+h1 {
+  padding: 1rem;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+#login, #status, #entries, form, .entry-card {
+  width: 90%;
+  max-width: 700px;
+  margin: auto;
+}
+
+form {
+  margin-top: 1.5em;
+}
+
+input, select, textarea {
   font-size: 1rem;
-  padding: 0.75em;
-  margin: 0.5em 0;
+  padding: 0.9em;
+  margin-bottom: 1.25em;
   width: 100%;
   box-sizing: border-box;
   border-radius: 6px;
@@ -37,12 +53,21 @@ input, select, textarea, button {
   color: var(--fg);
 }
 
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
 button {
   background: var(--primary);
   color: #fff;
   border: none;
+  border-radius: 6px;
+  padding: 0.85em 1em;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background 0.3s;
+  width: 100%;
+  margin-bottom: 0.75em;
 }
 
 button:hover {
@@ -52,7 +77,6 @@ button:hover {
 button.delete {
   background: var(--danger);
 }
-
 button.delete:hover {
   background: #b71c1c;
 }
@@ -61,27 +85,27 @@ button.delete:hover {
   background: var(--card);
   border: 1px solid var(--border);
   padding: 1em;
-  margin-bottom: 1em;
+  margin: 1em auto;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 .entry-card h3 {
-  margin: 0 0 0.5em;
+  margin-top: 0;
   font-size: 1.1em;
 }
 
 .actions {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 0.5em;
   margin-top: 0.75em;
 }
 
 table {
-  width: 100%;
+  width: 90%;
+  margin: 1em auto;
   border-collapse: collapse;
-  margin-top: 1em;
 }
 
 th, td {
@@ -90,19 +114,22 @@ th, td {
   text-align: left;
 }
 
+#status {
+  font-weight: bold;
+  padding: 0.5em;
+}
+
 @media (max-width: 600px) {
-  input, select, textarea, button {
-    font-size: 1.1rem;
-    padding: 1em;
+  h1 {
+    font-size: 1.3rem;
   }
 
-  .actions {
-    flex-direction: column;
-    gap: 0.5em;
+  input, select, textarea, button {
+    font-size: 1.05rem;
   }
 
   button {
-    font-size: 1.05rem;
+    padding: 1em;
   }
 
   .entry-card p {
