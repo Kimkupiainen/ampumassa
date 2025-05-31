@@ -315,20 +315,51 @@ document.getElementById('export-pdf').onclick = async () => {
         });
         const data = await res.json();
         const rows = data.values.slice(1);
-        const container = document.getElementById('entries');
-		container.innerHTML = rows.map((r, i) => `
-		  <div class="entry-card">
-			<h3>${escapeHTML(r[0] || '')} – ${escapeHTML(r[1] || '')}</h3>
-			<p><strong>Ase:</strong> ${escapeHTML(r[2] || '')} (${escapeHTML(r[3] || '')})</p>
-			<p><strong>Paikka:</strong> ${escapeHTML(r[4] || '')}</p>
-			<p><strong>Laukaukset:</strong> ${escapeHTML(r[5] || '')}</p>
-			<p><strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}</p>
-			<div class="actions">
-			  <button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
-			  <button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
-			</div>
-		  </div>
-		`).join('');
+		const container = document.getElementById('entries');
+		container.innerHTML = ''; // tyhjennä ennen uudelleenkäyttöä
+
+		rows.forEach((r, i) => {
+		  const card = document.createElement('div');
+		  card.className = 'entry-card';
+
+		  const title = document.createElement('h3');
+		  title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
+		  card.appendChild(title);
+
+		  const weapon = document.createElement('p');
+		  weapon.innerHTML = `<strong>Ase:</strong> ${escapeHTML(r[2] || '')} (${escapeHTML(r[3] || '')})`;
+		  card.appendChild(weapon);
+
+		  const location = document.createElement('p');
+		  location.innerHTML = `<strong>Paikka:</strong> ${escapeHTML(r[4] || '')}`;
+		  card.appendChild(location);
+
+		  const rounds = document.createElement('p');
+		  rounds.innerHTML = `<strong>Laukaukset:</strong> ${escapeHTML(r[5] || '')}`;
+		  card.appendChild(rounds);
+
+		  const notes = document.createElement('p');
+		  notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`;
+		  card.appendChild(notes);
+
+		  const actions = document.createElement('div');
+		  actions.className = 'actions';
+
+		  const editBtn = document.createElement('button');
+		  editBtn.className = 'edit';
+		  editBtn.textContent = 'Muokkaa';
+		  editBtn.onclick = () => editRow(i + 1);
+		  actions.appendChild(editBtn);
+
+		  const deleteBtn = document.createElement('button');
+		  deleteBtn.className = 'delete';
+		  deleteBtn.textContent = 'Poista';
+		  deleteBtn.onclick = () => deleteRow(i + 1);
+		  actions.appendChild(deleteBtn);
+
+		  card.appendChild(actions);
+		  container.appendChild(card);
+		});
       };
 
       window.editRow = async (index) => {
