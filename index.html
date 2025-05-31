@@ -180,7 +180,12 @@ document.getElementById('export-pdf').onclick = async () => {
       const list = document.getElementById(id);
       const items = JSON.parse(localStorage.getItem(key) || "[]");
 	  items.sort()
-      list.innerHTML = items.map(val => `<option value="${val}">`).join('');
+      list.innerHTML = '';
+	items.forEach(val => {
+	  const opt = document.createElement('option');
+	  opt.value = val;
+	  list.appendChild(opt);
+	});
     }
 	
     function cancelEdit() {
