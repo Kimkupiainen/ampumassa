@@ -31,7 +31,7 @@ body::before {
   --fg: #111;
   --card: #fff;
   --border: #ccc;
-  --primary: #0066cc;
+  --primary: #ff8800; /* oranssi */
   --danger: #c62828;
 }
 
@@ -72,11 +72,16 @@ input, select, textarea {
   min-height: 56px;
   box-sizing: border-box;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   background: var(--card);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   color: var(--fg);
 }
-
+input:focus, textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.3);
+}
 textarea {
   min-height: 140px;
   resize: vertical;
@@ -84,25 +89,25 @@ textarea {
 
 button {
   background: var(--primary);
-  color: #fff;
+   color: #000; /* tumma teksti, hyvä kontrasti oranssia vasten */
   border: none;
   border-radius: 8px;
-  padding: 1.1em;
+  padding: 1.2em;
   max-width: 720px;
   margin: auto;
-  font-size: 1.8rem;
+  font-size: 2rem;
   cursor: pointer;
   width: 100%;
   display: block;
   margin-bottom: 1em;
 }
 .actions button {
-  min-height: 48px;
-  font-size: 1.2rem;
+ min-height: 56px;
+  font-size: 1.5rem;
   padding: 0.8em 1.2em;
 }
 button:hover {
-  background: #0051a3;
+  background: #e67600;
 }
 
 button.delete {
@@ -158,9 +163,16 @@ th, td {
 }
 
 @media (max-width: 600px) {
-  h1 {
-    font-size: 1.5rem;
+  form, .entry-card {
+    width: 96%;
+    padding: 0.5em;
   }
+
+  h1 {
+    font-size: 2rem;
+    text-align: center;
+  }
+}
 
   button, input, select, textarea {
     font-size: 1.25rem;
@@ -231,8 +243,9 @@ body.dark #app-footer {
   color: var(--fg);
   padding: 2em;
   border-radius: 12px;
-  max-width: 90%;
-  width: 400px;
+  max-width: 95%;
+  width: 90%;
+  font-size: 2rem;
   text-align: center;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
