@@ -390,13 +390,9 @@
 			const [date, event, weapon, tt, location, rounds, notes] = rows[i];
 
 			const block = [
-			  `Päivämäärä: ${date}`,
-			  `Tapahtuma: ${event}`,
-			  `Ase: ${weapon} (${tt})`,
-			  `Paikka: ${location}`,
-			  `Laukaukset: ${rounds}`,
-			  `Huomiot:`,
-			  notes || "-"
+			  `${date} — ${event}`,
+			  `${weapon} (${tt}) @ ${location} | ${rounds} laukausta`,
+			  `Huomiot: ${notes || "-"}`
 			];
 
 			for (let line of block) {
