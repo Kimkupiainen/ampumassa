@@ -65,6 +65,8 @@ button {
   border: none;
   border-radius: 8px;
   padding: 1.1em;
+  max-width: 720px;
+  margin: auto;
   font-size: 1.8rem;
   cursor: pointer;
   width: 100%;
