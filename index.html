@@ -350,22 +350,27 @@ document.getElementById('export-pdf').onclick = async () => {
         document.getElementById('status').textContent = 'Merkintä tallennettu.';
       });
 
-      document.getElementById('load-entries').onclick = async () => {
-        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-          headers: { Authorization: 'Bearer ' + accessToken }
-        });
-        const data = await res.json();
-        const rows = data.values.slice(1);
-		const container = document.getElementById('entries');
-		container.innerHTML = '';
+		document.getElementById('load-entries').onclick = async () => {
+		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+			headers: { Authorization: 'Bearer ' + accessToken }
+		  });
+		  const data = await res.json();
+		  const rows = data.values.slice(1);
+		  const totalRows = rows.length;
+		  rows.reverse();
 
-		rows.forEach((r, i) => {
-		  const card = document.createElement('div');
-		  card.className = 'entry-card';
+		  const container = document.getElementById('entries');
+		  container.innerHTML = '';
 
-		  const title = document.createElement('h3');
-		  title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
-		  card.appendChild(title);
+		  rows.forEach((r, i) => {
+			const sheetRowIndex = totalRows - i + 1; // +1 koska header oli slice(1):llä pois
+
+			const card = document.createElement('div');
+			card.className = 'entry-card';
+
+			const title = document.createElement('h3');
+			title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
+			card.appendChild(title);
 
 			const weapon = document.createElement('p');
 			weapon.textContent = `Ase: ${r[2] || ''} (${r[3] || ''})`;
@@ -380,29 +385,29 @@ document.getElementById('export-pdf').onclick = async () => {
 			card.appendChild(rounds);
 
 			const notes = document.createElement('p');
-			notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`; // tämä vaatii <br>
+			notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`;
 			card.appendChild(notes);
 
+			const actions = document.createElement('div');
+			actions.className = 'actions';
 
-		  const actions = document.createElement('div');
-		  actions.className = 'actions';
+			const editBtn = document.createElement('button');
+			editBtn.className = 'edit';
+			editBtn.textContent = 'Muokkaa';
+			editBtn.onclick = () => editRow(sheetRowIndex);
+			actions.appendChild(editBtn);
 
-		  const editBtn = document.createElement('button');
-		  editBtn.className = 'edit';
-		  editBtn.textContent = 'Muokkaa';
-		  editBtn.onclick = () => editRow(i + 1);
-		  actions.appendChild(editBtn);
+			const deleteBtn = document.createElement('button');
+			deleteBtn.className = 'delete';
+			deleteBtn.textContent = 'Poista';
+			deleteBtn.onclick = () => deleteRow(sheetRowIndex);
+			actions.appendChild(deleteBtn);
 
-		  const deleteBtn = document.createElement('button');
-		  deleteBtn.className = 'delete';
-		  deleteBtn.textContent = 'Poista';
-		  deleteBtn.onclick = () => deleteRow(i + 1);
-		  actions.appendChild(deleteBtn);
+			card.appendChild(actions);
+			container.appendChild(card);
+		  });
+		};
 
-		  card.appendChild(actions);
-		  container.appendChild(card);
-		});
-      };
 
       window.editRow = async (index) => {
         const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
