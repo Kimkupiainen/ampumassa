@@ -9,7 +9,7 @@ body {
   background-attachment: fixed; /* <-- tämä tekee sen "parallax scroll" -efektin */
   color: var(--fg);
   font-family: sans-serif;
-  font
+  font-size: 18px;
   position: relative;
   min-height: 100vh;
 }
