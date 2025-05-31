@@ -92,37 +92,51 @@
     }
 
     async function findOrCreateSheet() {
-      const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          properties: { title: SHEET_NAME },
-          sheets: [{
-            properties: { title: SHEET_TAB },
-            data: [{
-              startRow: 0,
-              startColumn: 0,
-              rowData: [{
-                values: [
-                  { userEnteredValue: { stringValue: 'Päivämäärä' } },
-                  { userEnteredValue: { stringValue: 'Tapahtuma' } },
-                  { userEnteredValue: { stringValue: 'Ase' } },
-                  { userEnteredValue: { stringValue: 'Toimintatapa' } },
-                  { userEnteredValue: { stringValue: 'Paikka' } },
-                  { userEnteredValue: { stringValue: 'Laukaukset' } },
-                  { userEnteredValue: { stringValue: 'Kuvaus' } }
-                ]
-              }]
-            }]
-          }]
-        })
-      });
-      const json = await createRes.json();
-      spreadsheetId = json.spreadsheetId;
-    }
+	  // 1. Tarkista onko Sheets-tyyppinen tiedosto nimellä ampumapaivakirja
+	  const driveQuery = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+	  const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(driveQuery)}&fields=files(id,name)`, {
+		headers: { Authorization: 'Bearer ' + accessToken }
+	  });
+	  const driveData = await driveRes.json();
+
+	  if (driveData.files && driveData.files.length > 0) {
+		spreadsheetId = driveData.files[0].id;
+		return;
+	  }
+
+	  // 2. Ei löytynyt → luodaan uusi Sheet
+	  const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+		method: 'POST',
+		headers: {
+		  Authorization: 'Bearer ' + accessToken,
+		  'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+		  properties: { title: SHEET_NAME },
+		  sheets: [{
+			properties: { title: SHEET_TAB },
+			data: [{
+			  startRow: 0,
+			  startColumn: 0,
+			  rowData: [{
+				values: [
+				  { userEnteredValue: { stringValue: 'Päivämäärä' } },
+				  { userEnteredValue: { stringValue: 'Tapahtuma' } },
+				  { userEnteredValue: { stringValue: 'Ase' } },
+				  { userEnteredValue: { stringValue: 'Toimintatapa' } },
+				  { userEnteredValue: { stringValue: 'Paikka' } },
+				  { userEnteredValue: { stringValue: 'Laukaukset' } },
+				  { userEnteredValue: { stringValue: 'Kuvaus' } }
+				]
+			  }]
+			}]
+		  }]
+		})
+	  });
+	  const json = await createRes.json();
+	  spreadsheetId = json.spreadsheetId;
+	}
+
 
     document.getElementById('login-btn').onclick = () => {
       tokenClient.requestAccessToken();
