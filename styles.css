@@ -243,3 +243,41 @@ body.dark #app-footer {
 .popup-content button {
   margin-top: 1em;
 }
+#confirmation-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background: rgba(0, 0, 0, 0.6);
+  display: none; /* oletuksena piilossa */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#confirmation-popup .popup-content {
+  background: var(--card);
+  color: var(--fg);
+  padding: 2em;
+  border-radius: 12px;
+  max-width: 90%;
+  width: 400px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+#confirmation-popup button {
+  margin-top: 1.5em;
+  padding: 0.75em 2em;
+  font-size: 1.1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#confirmation-popup button:hover {
+  background: #0051a3;
+}
