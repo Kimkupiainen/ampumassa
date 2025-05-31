@@ -1,5 +1,5 @@
-
-const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
+window.addEventListener('DOMContentLoaded', () => {
+  const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 const SHEET_NAME = 'ampumapaivakirja';
 const SHEET_TAB = 'Merkinnät';
@@ -262,3 +262,5 @@ async function editRow(index) {
   document.getElementById('status').textContent = `Muokataan riviä \${index}`;
   window.scrollTo(0, 0);
 }
+
+});
