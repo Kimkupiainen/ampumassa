@@ -1,31 +1,3 @@
-
-body {
-  margin: 0;
-  padding: 0;
-  background-image: url('taustakuva.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-attachment: fixed; /* <-- tämä tekee sen "parallax scroll" -efektin */
-  color: var(--fg);
-  font-family: sans-serif;
-  font-size: 18px;
-  position: relative;
-  min-height: 100vh;
-}
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-  background-color: transparent;
-  transition: background-color 1.0s ease;
-  padding: 1.5rem;
-}
 :root {
   --bg: #f9f9f9;
   --fg: #111;
@@ -35,9 +7,6 @@ body::before {
   --danger: #c62828;
 }
 
-body.dark::before {
-  background-color: rgba(0, 0, 0, 0.8); /* tumma overlay dark modessa */
-}
 body.dark {
   --bg: #121212;
   --fg: #eee;
@@ -47,11 +16,42 @@ body.dark {
   --danger: #ef5350;
 }
 
+body {
+  margin: 0;
+  padding: 0;
+  background-image: url('taustakuva.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: sans-serif;
+  font-size: 18px;
+  position: relative;
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background-color: transparent;
+  transition: background-color 1.0s ease;
+  padding: 1.5rem;
+}
+
+body.dark::before {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
 h1 {
   padding: 1rem;
   margin: 0;
   font-size: 1.6rem;
-  color: var(--fg); /* tämä ohjaa värin automaattisesti dark/light -tilaan */
+  color: var(--fg);
 }
 
 #login, #status, #entries, form, .entry-card {
@@ -65,11 +65,11 @@ form {
 }
 
 input, select, textarea {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   padding: 1.1em;
   margin-bottom: 1.4em;
   width: 100%;
-  min-height: 56px;
+  min-height: 60px;
   box-sizing: border-box;
   border-radius: 8px;
   border: 2px solid var(--border);
@@ -77,11 +77,13 @@ input, select, textarea {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   color: var(--fg);
 }
+
 input:focus, textarea:focus {
   border-color: var(--primary);
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.3);
 }
+
 textarea {
   min-height: 140px;
   resize: vertical;
@@ -89,7 +91,7 @@ textarea {
 
 button {
   background: var(--primary);
-   color: #000; /* tumma teksti, hyvä kontrasti oranssia vasten */
+  color: #000;
   border: none;
   border-radius: 8px;
   padding: 1.2em;
@@ -101,17 +103,20 @@ button {
   display: block;
   margin-bottom: 1em;
 }
-.actions button {
- min-height: 56px;
-  font-size: 1.5rem;
-  padding: 0.8em 1.2em;
-}
+
 button:hover {
   background: #e67600;
 }
 
+.actions button {
+  min-height: 56px;
+  font-size: 1.5rem;
+  padding: 0.8em 1.2em;
+}
+
 button.delete {
   background: var(--danger);
+  color: white;
 }
 button.delete:hover {
   background: #b71c1c;
@@ -162,6 +167,7 @@ th, td {
   font-size: 1.1rem;
 }
 
+/* Responsiivisuus */
 @media (max-width: 600px) {
   form, .entry-card {
     width: 96%;
@@ -174,15 +180,6 @@ th, td {
   }
 }
 
-  button, input, select, textarea {
-    font-size: 1.25rem;
-    min-height: 60px;
-  }
-
-  .entry-card p {
-    font-size: 1.15rem;
-  }
-}
 #app-footer {
   width: 100%;
   padding: 1.2em;
@@ -190,7 +187,7 @@ th, td {
   font-size: 0.9em;
   color: var(--fg);
   background-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
   margin-top: 3em;
   position: fixed;
   bottom: 0;
@@ -201,7 +198,8 @@ th, td {
 body.dark #app-footer {
   background-color: rgba(0, 0, 0, 0.7);
 }
-/* Spinner */
+
+/* Loader */
 #loader {
   position: fixed;
   top: 0; left: 0;
@@ -221,10 +219,12 @@ body.dark #app-footer {
   height: 48px;
   animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
+/* Popup */
 #confirmation-popup {
   position: fixed;
   top: 0;
@@ -232,7 +232,7 @@ body.dark #app-footer {
   height: 100vh;
   width: 100vw;
   background: rgba(0, 0, 0, 0.6);
-  display: none; /* oletuksena piilossa */
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 9999;
@@ -255,34 +255,12 @@ body.dark #app-footer {
   padding: 0.75em 2em;
   font-size: 1.1rem;
   background: var(--primary);
-  color: white;
+  color: black;
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 #confirmation-popup button:hover {
-  background: #0051a3;
-}
-
-.popup-content {
-  background: var(--card);
-  padding: 2em;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  max-width: 90%;
-  width: 400px;
-  color: var(--fg);
-}
-
-.popup-content h3 {
-  margin-top: 0;
-  font-size: 1.5em;
-}
-
-.popup-content button {
-  margin-top: 1em;
-}
-#app-footer {
-  backdrop-filter: blur(8px);
+  background: #e67600;
 }

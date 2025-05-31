@@ -1,129 +1,32 @@
-
 <!DOCTYPE html>
 <html lang="fi">
 <head>
   <meta charset="UTF-8">
   <title>Ampumapäiväkirja</title>
-  <script src="https://accounts.google.com/gsi/client" async defer>
-document.getElementById('export-pdf').onclick = async () => {
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
-  const data = await res.json();
-  const rows = data.values;
 
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Ampumapäiväkirja", 10, 10);
-
-  let y = 20;
-  rows.forEach((r, i) => {
-    const line = r.join(" | ");
-    doc.text(line, 10, y);
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 10;
-    }
-  });
-
-  doc.save("ampumapaivakirja.pdf");
-};
-
-
-document.getElementById('export-pdf').onclick = async () => {
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
-  const data = await res.json();
-  const rows = data.values;
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Ampumapäiväkirja", 10, 10);
-
-  let y = 20;
-  rows.forEach((r, i) => {
-    const line = r.join(" | ");
-    doc.text(line, 10, y);
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 10;
-    }
-  });
-
-  doc.save("ampumapaivakirja.pdf");
-};
-
-</script>
+  <!-- Tyylit -->
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-document.getElementById('export-pdf').onclick = async () => {
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
-  const data = await res.json();
-  const rows = data.values;
 
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Ampumapäiväkirja", 10, 10);
+  <!-- Google Sign-In -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  let y = 20;
-  rows.forEach((r, i) => {
-    const line = r.join(" | ");
-    doc.text(line, 10, y);
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 10;
-    }
-  });
-
-  doc.save("ampumapaivakirja.pdf");
-};
-
-
-document.getElementById('export-pdf').onclick = async () => {
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
-  const data = await res.json();
-  const rows = data.values;
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Ampumapäiväkirja", 10, 10);
-
-  let y = 20;
-  rows.forEach((r, i) => {
-    const line = r.join(" | ");
-    doc.text(line, 10, y);
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 10;
-    }
-  });
-
-  doc.save("ampumapaivakirja.pdf");
-};
-
-</script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body>
   <h1>Ampumapäiväkirja</h1>
-  
-  <div id="login"><button onclick="toggleDarkMode()">🌓 Light/Dark teema</button><button id="login-btn">Kirjaudu Google-tilillä</button></div>
+
+  <div id="login">
+    <button onclick="toggleDarkMode()">🌓 Light/Dark teema</button>
+    <button id="login-btn">Kirjaudu Google-tilillä</button>
+  </div>
 
   <form id="log-form" style="display:none">
     <input type="date" id="date" required>
     <input type="text" id="event" placeholder="Tapahtuma" required>
-	<input list="weapons" id="weapon" placeholder="Ase / kaliiperi" required>
-	<datalist id="weapons"></datalist>
+    <input list="weapons" id="weapon" placeholder="Ase / kaliiperi" required>
+    <datalist id="weapons"></datalist>
+
     <select id="tt" required>
       <option value="">Valitse toimintatapa</option>
       <option value="TT1">TT1 – kertatuli ilman lipasta</option>
@@ -131,379 +34,46 @@ document.getElementById('export-pdf').onclick = async () => {
       <option value="TT3">TT3 – itselataava kertatuli</option>
       <option value="TT4">TT4 – sarjatuli</option>
     </select>
-	<input list="locations" id="location" placeholder="Paikka" required>
-	<datalist id="locations"></datalist>
+
+    <input list="locations" id="location" placeholder="Paikka" required>
+    <datalist id="locations"></datalist>
+
     <input type="number" id="rounds" placeholder="Laukaukset" required>
     <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
+
     <div>
       <button type="submit" class="save">Tallenna merkintä</button>
       <button type="button" onclick="cancelEdit()">Peru muokkaus</button>
     </div>
-	  <div id="status"></div>
+    <div id="status"></div>
   </form>
 
-
   <div id="entries">
-      <div>
-	<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
-    <button id="export-pdf" style="display:none">📄 Lataa PDF</button>
-	</div>
+    <div>
+      <button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
+      <button id="export-pdf" style="display:none">📄 Lataa PDF</button>
+    </div>
   </div>
-	  <!-- Loader -->
-	<div id="loader" style="display: none;">
-	  <div class="spinner"></div>
-	</div>
 
-	<!-- Popup confirmation -->
-	<div id="confirmation-popup" style="display: none;">
-	  <div class="popup-content">
-		<h3>Merkintä lisätty</h3>
-		<div id="popup-details"></div>
-		<button onclick="closeConfirmation()">OK</button>
-	  </div>
-	</div>
-  <script>
-    const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-    const SHEET_NAME = 'ampumapaivakirja';
-    const SHEET_TAB = 'Merkinnät';
-    let accessToken = null;
-    let spreadsheetId = null;
-    let editingRow = null;
-    let tokenClient;
+  <!-- Loader -->
+  <div id="loader" style="display: none;">
+    <div class="spinner"></div>
+  </div>
 
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark');
-    }
+  <!-- Popup confirmation -->
+  <div id="confirmation-popup" style="display: none;">
+    <div class="popup-content">
+      <h3>Merkintä lisätty</h3>
+      <div id="popup-details"></div>
+      <button onclick="closeConfirmation()">OK</button>
+    </div>
+  </div>
 
-    function saveToLocalStorage(key, value) {
-	  if (!value) return;
-	  let existing = JSON.parse(localStorage.getItem(key) || "[]");
+  <footer id="app-footer">
+    © 2025 Kim Kupiainen – Tämä sivu tallentaa tietoja ainoastaan sinun Google Driveen ja selaimen muistiin.
+  </footer>
 
-	  // Normalize existing for comparison only
-	  const normalized = existing.map(v => v.trim().toLowerCase());
-	  const candidate = value.trim().toLowerCase();
-
-	  if (!normalized.includes(candidate)) {
-		existing.push(value.trim()); // keep original casing for UX
-		localStorage.setItem(key, JSON.stringify(existing));
-	  }
-	}
-	
-	function populateDatalist(id, key) {
-      const list = document.getElementById(id);
-      const items = JSON.parse(localStorage.getItem(key) || "[]");
-	  items.sort()
-      list.innerHTML = '';
-	items.forEach(val => {
-	  const opt = document.createElement('option');
-	  opt.value = val;
-	  list.appendChild(opt);
-	});
-    }
-	
-    function cancelEdit() {
-      document.getElementById('log-form').reset();
-      editingRow = null;
-      document.getElementById('status').textContent = 'Muokkaus peruttu.';
-    }
-	function escapeHTML(str) {
-	  return str.replace(/[&<>"']/g, match => ({
-		'&': '&amp;',
-		'<': '&lt;',
-		'>': '&gt;',
-		'"': '&quot;',
-		"'": '&#039;'
-	  }[match]));
-	}
-		function showLoader() {
-	  document.getElementById('loader').style.display = 'flex';
-	}
-
-	function hideLoader() {
-	  document.getElementById('loader').style.display = 'none';
-	}
-
-	function showConfirmation(row) {
-	  const details = `
-		<p><strong>Päivämäärä:</strong> ${escapeHTML(row[0])}</p>
-		<p><strong>Tapahtuma:</strong> ${escapeHTML(row[1])}</p>
-		<p><strong>Ase:</strong> ${escapeHTML(row[2])} (${escapeHTML(row[3])})</p>
-		<p><strong>Paikka:</strong> ${escapeHTML(row[4])}</p>
-		<p><strong>Laukaukset:</strong> ${escapeHTML(row[5])}</p>
-		<p><strong>Kuvaus:</strong> ${escapeHTML(row[6])}</p>
-	  `;
-	  document.getElementById('popup-details').innerHTML = details;
-	  document.getElementById('confirmation-popup').style.display = 'flex';
-	}
-
-	function closeConfirmation() {
-	  document.getElementById('confirmation-popup').style.display = 'none';
-	}
-
-    async function getSheetIdByTitle(title) {
-      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-      const data = await res.json();
-      const sheet = data.sheets.find(s => s.properties.title === title);
-      return sheet?.properties?.sheetId;
-    }
-
-    async function findOrCreateSheet() {
-      const query = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
-      const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`, {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-      const data = await driveRes.json();
-
-      if (data.files?.length) {
-        spreadsheetId = data.files[0].id;
-        return;
-      }
-
-      const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          properties: { title: SHEET_NAME },
-          sheets: [{
-            properties: { title: SHEET_TAB },
-            data: [{
-              startRow: 0,
-              startColumn: 0,
-              rowData: [{
-                values: [
-                  { userEnteredValue: { stringValue: 'Päivämäärä' } },
-                  { userEnteredValue: { stringValue: 'Tapahtuma' } },
-                  { userEnteredValue: { stringValue: 'Ase' } },
-                  { userEnteredValue: { stringValue: 'Toimintatapa' } },
-                  { userEnteredValue: { stringValue: 'Paikka' } },
-                  { userEnteredValue: { stringValue: 'Laukaukset' } },
-                  { userEnteredValue: { stringValue: 'Kuvaus' } }
-                ]
-              }]
-            }]
-          }]
-        })
-      });
-      const json = await createRes.json();
-      spreadsheetId = json.spreadsheetId;
-    }
-
-    window.onload = () => {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: async (response) => {
-          if (!response.access_token) return;
-          accessToken = response.access_token;
-          document.getElementById('log-form').style.display = 'block';
-          document.getElementById('load-entries').style.display = 'inline';
-          document.getElementById('export-pdf').style.display = 'inline';
-          document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
-          await findOrCreateSheet();
-		  populateDatalist("weapons", "weapons");
-          populateDatalist("locations", "locations");
-        }
-      });
-
-      document.getElementById('login-btn').onclick = () => {
-        tokenClient.requestAccessToken();
-      };
-
-      document.getElementById('log-form').addEventListener('submit', async (e) => {
-        showLoader();
-		e.preventDefault();
-        const row = [
-          document.getElementById('date').value,
-          document.getElementById('event').value,
-          document.getElementById('weapon').value,
-          document.getElementById('tt').value,
-          document.getElementById('location').value,
-          document.getElementById('rounds').value,
-          document.getElementById('notes').value
-        ];
-		    saveToLocalStorage("weapons", weapon.value);
-			saveToLocalStorage("locations", location.value);
-        if (editingRow) {
-          const range = `${SHEET_TAB}!A${editingRow + 1}`;
-          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`, {
-            method: 'PUT',
-            headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ range, values: [row] })
-          });
-          editingRow = null;
-        } else {
-          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A1:append?valueInputOption=RAW`, {
-            method: 'POST',
-            headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ values: [row] })
-          });
-        }
-		hideLoader();
-		showConfirmation(row);
-        document.getElementById('log-form').reset();
-        document.getElementById('status').textContent = 'Merkintä tallennettu.';
-      });
-
-      document.getElementById('load-entries').onclick = async () => {
-        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-          headers: { Authorization: 'Bearer ' + accessToken }
-        });
-        const data = await res.json();
-        const rows = data.values.slice(1);
-		const container = document.getElementById('entries');
-		container.innerHTML = '';
-
-		rows.forEach((r, i) => {
-		  const card = document.createElement('div');
-		  card.className = 'entry-card';
-
-		  const title = document.createElement('h3');
-		  title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
-		  card.appendChild(title);
-
-			const weapon = document.createElement('p');
-			weapon.textContent = `Ase: ${r[2] || ''} (${r[3] || ''})`;
-			card.appendChild(weapon);
-
-			const location = document.createElement('p');
-			location.textContent = `Paikka: ${r[4] || ''}`;
-			card.appendChild(location);
-
-			const rounds = document.createElement('p');
-			rounds.textContent = `Laukaukset: ${r[5] || ''}`;
-			card.appendChild(rounds);
-
-			const notes = document.createElement('p');
-			notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`; // tämä vaatii <br>
-			card.appendChild(notes);
-
-
-		  const actions = document.createElement('div');
-		  actions.className = 'actions';
-
-		  const editBtn = document.createElement('button');
-		  editBtn.className = 'edit';
-		  editBtn.textContent = 'Muokkaa';
-		  editBtn.onclick = () => editRow(i + 1);
-		  actions.appendChild(editBtn);
-
-		  const deleteBtn = document.createElement('button');
-		  deleteBtn.className = 'delete';
-		  deleteBtn.textContent = 'Poista';
-		  deleteBtn.onclick = () => deleteRow(i + 1);
-		  actions.appendChild(deleteBtn);
-
-		  card.appendChild(actions);
-		  container.appendChild(card);
-		});
-      };
-
-      window.editRow = async (index) => {
-        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
-          headers: { Authorization: 'Bearer ' + accessToken }
-        });
-        const data = await res.json();
-        const v = data.values[0];
-        ['date', 'event', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
-          document.getElementById(id).value = v[i] || '';
-        });
-        editingRow = index;
-        document.getElementById('status').textContent = `Muokataan riviä ${index}`;
-        window.scrollTo(0, 0);
-      };
-
-      window.deleteRow = async (index) => {
-        const sheetId = await getSheetIdByTitle(SHEET_TAB);
-        if (!sheetId) {
-          document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
-          return;
-        }
-        const request = {
-          requests: [{
-            deleteDimension: {
-              range: {
-                sheetId: sheetId,
-                dimension: 'ROWS',
-                startIndex: index,
-                endIndex: index + 1
-              }
-            }
-          }]
-        };
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
-          method: 'POST',
-          headers: {
-            Authorization: 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(request)
-        });
-        document.getElementById('status').textContent = 'Rivi poistettu.';
-        document.getElementById('load-entries').click();
-      };
-    };
-  
-document.getElementById('export-pdf').onclick = async () => {
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
-  const data = await res.json();
-  const rows = data.values;
-
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Ampumapäiväkirja", 10, 10);
-
-  let y = 20;
-  rows.forEach((r, i) => {
-    const line = r.join(" | ");
-    doc.text(line, 10, y);
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 10;
-    }
-  });
-
-  doc.save("ampumapaivakirja.pdf");
-};
-
-
-document.getElementById('export-pdf').onclick = async () => {
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-    headers: { Authorization: 'Bearer ' + accessToken }
-  });
-  const data = await res.json();
-  const rows = data.values;
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(10);
-  doc.text("Ampumapäiväkirja", 10, 10);
-
-  let y = 20;
-  rows.forEach((r, i) => {
-    const line = r.join(" | ");
-    doc.text(line, 10, y);
-    y += 8;
-    if (y > 280) {
-      doc.addPage();
-      y = 10;
-    }
-  });
-
-  doc.save("ampumapaivakirja.pdf");
-};
-
-</script>
-<footer id="app-footer">
-  © 2025 Kim Kupiainen – Tämä sivu tallentaa tietoja ainoastaan sinun Google Driveen ja selaimen muistiin.
-</footer>
+  <!-- Sovelluksen JavaScript -->
+  <script src="app.js" defer></script>
 </body>
 </html>
