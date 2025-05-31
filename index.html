@@ -378,16 +378,17 @@
 
 		  const { jsPDF } = window.jspdf;
 		  const doc = new jsPDF();
-		  const lineHeight = 7;
+		  const lineHeight = 5.5; 
 		  let y = 20;
 
 		  doc.setFontSize(16);
 		  doc.text("Ampumapäiväkirja", 10, 15);
-		  doc.setFontSize(12);
+		  doc.setFontSize(10);         // aiemmin 12
+ 
 
 		  // skipataan header (rows[0])
 		  for (let i = 1; i < rows.length; i++) {
-			const [date, event, weapon, tt, location, rounds, notes] = rows[i];
+			const [date, event, weapon, tt, location, rounds, notes = ""] = rows[i];
 
 			const block = [
 			  `${date} — ${event}`,
