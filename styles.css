@@ -3,6 +3,7 @@ body {
   padding: 2em;
   max-width: 700px;
   margin: auto;
+  background: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
   background-color: #fefefe;
   color: #111;
 }
@@ -33,6 +34,7 @@ th, td {
 
 /* Dark mode */
 body.dark {
+  background: url('https://www.transparenttextures.com/patterns/black-linen.png');
   background-color: #121212;
   color: #eee;
 }
@@ -99,4 +101,52 @@ body.dark #bottom-bar {
   flex: 1;
   margin: 0 0.5em;
   font-size: 1em;
+}
+.entry-card {
+  display: none;
+}
+
+@media screen and (max-width: 600px) {
+  table { display: none; }
+
+  .entry-card {
+    display: block;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    padding: 1em;
+    margin-bottom: 1em;
+    background: white;
+  }
+
+  body.dark .entry-card {
+    background: #1e1e1e;
+    border-color: #444;
+  }
+
+  .entry-card h3 {
+    margin-top: 0;
+    font-size: 1em;
+    color: #333;
+  }
+
+  body.dark .entry-card h3 {
+    color: #ccc;
+  }
+
+  .entry-card p {
+    margin: 0.25em 0;
+  }
+
+  .entry-card .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5em;
+    margin-top: 0.75em;
+  }
+
+  .entry-card .actions button {
+    flex: 1;
+    padding: 0.5em;
+    font-size: 1em;
+  }
 }

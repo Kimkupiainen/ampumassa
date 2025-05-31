@@ -149,16 +149,33 @@
       const data = await res.json();
       const rows = data.values.slice(1); // skip header
       const container = document.getElementById('entries');
-      container.innerHTML = `<table><thead><tr><th>Päivämäärä</th><th>Tapahtuma</th><th>Ase</th><th>TT</th><th>Paikka</th><th>Laukaukset</th><th>Kuvaus</th><th>Toiminnot</th></tr></thead><tbody>
-        ${rows.map((r, i) => `<tr>
-          ${r.map(cell => `<td>${cell}</td>`).join('')}
-          <td class="actions">
-            <button onclick="editRow(${i + 1})>Muokkaa</button>
-            <button onclick="deleteRow(${i + 1})">Poista</button>
-          </td>
-        </tr>`).join('')}
-      </tbody></table>`;
-    };
+		if (window.innerWidth >= 600) {
+		  // Desktop: taulukko
+		  container.innerHTML = `<table><thead><tr><th>Päivämäärä</th><th>Tapahtuma</th><th>Ase</th><th>TT</th><th>Paikka</th><th>Laukaukset</th><th>Kuvaus</th><th>Toiminnot</th></tr></thead><tbody>
+			${rows.map((r, i) => `<tr>
+			  ${r.map(cell => `<td>${cell}</td>`).join('')}
+			  <td class="actions">
+				<button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
+				<button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
+			  </td>
+			</tr>`).join('')}
+		  </tbody></table>`;
+		} else {
+		  // Mobile: cards
+		  container.innerHTML = rows.map((r, i) => `
+			<div class="entry-card">
+			  <h3>${r[0] || ''} – ${r[1] || ''}</h3>
+			  <p><strong>Ase:</strong> ${r[2] || ''} (${r[3] || ''})</p>
+			  <p><strong>Paikka:</strong> ${r[4] || ''}</p>
+			  <p><strong>Laukaukset:</strong> ${r[5] || ''}</p>
+			  <p><strong>Kuvaus:</strong><br>${r[6] || ''}</p>
+			  <div class="actions">
+				<button class="edit" onclick="editRow(${i + 1})">Muokkaa</button>
+				<button class="delete" onclick="deleteRow(${i + 1})">Poista</button>
+			  </div>
+			</div>
+		  `).join('');
+		}
 
     window.editRow = async (index) => {
       const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
