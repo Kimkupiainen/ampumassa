@@ -1,65 +1,102 @@
 body {
-  font-family: system-ui, sans-serif;
-  background: #f5f5f5;
-  color: #111;
-  max-width: 600px;
-  margin: 2em auto;
+  font-family: sans-serif;
   padding: 2em;
-  background-color: #fff;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+  max-width: 700px;
+  margin: auto;
+  background-color: #fefefe;
+  color: #111;
 }
 
-input, textarea, button {
+input, select, textarea, button {
   width: 100%;
   margin-bottom: 1em;
   padding: 0.75em;
   font-size: 1em;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  box-sizing: border-box;
 }
 
-button {
-  background-color: #007acc;
-  color: white;
-  border: none;
-  cursor: pointer;
+table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-button:hover {
-  background-color: #005ea3;
+th, td {
+  border: 1px solid #aaa;
+  padding: 0.5em;
+  text-align: left;
+  word-break: break-word;
+}
+
+.actions button {
+  margin-right: 0.5em;
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #121212;
-    color: #eee;
-  }
-
-  input, textarea, button {
-    background-color: #1e1e1e;
-    color: #eee;
-    border: 1px solid #444;
-  }
-
-  button {
-    background-color: #007acc;
-    color: white;
-  }
-
-  button:hover {
-    background-color: #005ea3;
-  }
-}
-
-body.dark-mode {
-  background: #121212;
+body.dark {
+  background-color: #121212;
   color: #eee;
 }
-body.dark-mode input,
-body.dark-mode textarea,
-body.dark-mode button {
-  background-color: #1e1e1e;
+
+body.dark input,
+body.dark select,
+body.dark textarea,
+body.dark button {
+  background-color: #222;
   color: #eee;
   border: 1px solid #444;
+}
+
+body.dark table,
+body.dark th,
+body.dark td {
+  border: 1px solid #444;
+}
+
+/* Responsive layout for mobile */
+@media screen and (max-width: 600px) {
+  input, select, textarea, button {
+    font-size: 1.1em;
+    padding: 1em;
+  }
+
+  table {
+    font-size: 0.85em;
+  }
+
+  th, td {
+    padding: 0.5em 0.25em;
+  }
+
+  td.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  .actions button {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+/* Optional fixed bottom bar */
+#bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  padding: 1em;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-around;
+  z-index: 1000;
+}
+body.dark #bottom-bar {
+  background: #1a1a1a;
+}
+#bottom-bar button {
+  flex: 1;
+  margin: 0 0.5em;
+  font-size: 1em;
 }
