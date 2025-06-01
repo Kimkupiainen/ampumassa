@@ -241,6 +241,9 @@ body.dark #app-footer {
 
 .nav-links {
   display: flex;
+  width: 100%;
+  padding: 1em;
+  box-sizing: border-box; /* ← tämä korjaa ylivuodon */
   gap: 1em;
 }
 
