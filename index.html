@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-  <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
   <title>Ampumapäiväkirja</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="styles.css">
@@ -10,6 +10,16 @@
 </script>
 </head>
 <body class="dark">
+<header class="site-header">
+  <div class="nav-container">
+    <div class="brand">AMPUMASSA</div>
+    <button class="menu-toggle" aria-label="Valikko">☰</button>
+    <nav class="nav-links">
+      <a href="index.html" class="active">Etusivu</a>
+      <a href="tietosuojaseloste.html">Tietosuoja</a>
+    </nav>
+  </div>
+</header>
   <h1><strong>AMPUMASSA</strong><br> Ampumapäiväkirja netissä</h1>
   
   <div id="login"><button id="login-btn">Kirjaudu Google-tilillä</button></div>
@@ -106,7 +116,9 @@
 	  list.appendChild(opt);
 	});
     }
-	
+	document.querySelector('.menu-toggle').onclick = () => {
+  document.querySelector('.nav-links').classList.toggle('open');
+};
     function cancelEdit() {
       document.getElementById('log-form').reset();
       editingRow = null;
