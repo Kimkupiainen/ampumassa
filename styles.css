@@ -33,6 +33,8 @@ body {
   position: relative;
   min-height: 100vh;
   padding-bottom: 140px; /* footerin korkeus + extra tilaa */
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body::before {
@@ -136,6 +138,11 @@ button.delete:hover {
   padding: 1.25em;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .entry-card h3 {
