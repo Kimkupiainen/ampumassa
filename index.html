@@ -339,12 +339,9 @@
 		}; 
 
 		window.editRow = async (index) => {
-		  const res = await fetch(
-			`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`,
-			{
-			  headers: { Authorization: 'Bearer ' + accessToken }
-			}
-		  );
+		const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:G${index + 1}`, {
+		  headers: { Authorization: 'Bearer ' + accessToken }
+		});
 		  const data = await res.json();
 		  const v = data.values?.[0] || [];
 
@@ -355,7 +352,7 @@
 		  // Täytetään kentät turvallisesti
 		  ['date', 'event', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
 			const el = document.getElementById(id);
-			let value = v[i] ?? ''; // jos undefined tai null → tyhjä
+			let value = (v[i] !== undefined ? v[i] : '');
 			if (id === 'date' && value.includes('/')) {
 			  value = value.split('/').reverse().join('-');
 			}
