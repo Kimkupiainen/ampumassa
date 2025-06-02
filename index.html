@@ -271,6 +271,7 @@
       });
 
 		  window.loadEntries = async function () {
+		  document.getElementById('global-loader').style.display = 'flex';
 		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
 			headers: { Authorization: 'Bearer ' + accessToken }
 		  });
@@ -330,6 +331,7 @@
 			card.appendChild(actions);
 			container.appendChild(card);
 		  });
+		  document.getElementById('global-loader').style.display = 'none';
 		}
 
 		document.getElementById('load-entries').onclick = loadEntries;
@@ -440,5 +442,11 @@
   ☕ Droppaa kahvirahaa
 </button>
 </footer>
+<div id="global-loader" style="display:none;">
+  <div class="global-loader-content">
+    <div class="spinner"></div>
+    <p>Haetaan merkintöjä...</p>
+  </div>
+</div>
 </body>
 </html>
