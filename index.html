@@ -305,8 +305,12 @@
 			card.appendChild(rounds);
 
 			const notes = document.createElement('p');
-			notes.innerHTML = `<strong>Kuvaus:</strong><br>${escapeHTML(r[6] || '')}`;
-			card.appendChild(notes);
+			const label = document.createElement('strong');
+			label.textContent = 'Kuvaus:';
+
+			notes.appendChild(label);
+			notes.appendChild(document.createElement('br'));
+			notes.appendChild(document.createTextNode(r[6] || ''));
 
 			const actions = document.createElement('div');
 			actions.className = 'actions';
