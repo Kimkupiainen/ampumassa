@@ -451,6 +451,36 @@
 		};
 
 </script>
+<script>
+  let lastScrollY = window.scrollY;
+  const header = document.querySelector('.site-header');
+  const nav = document.querySelector('.nav-links');
+
+  window.addEventListener('scroll', () => {
+    const currentScrollY = window.scrollY;
+
+    // Sulje valikko jos auki
+    if (nav.classList.contains('open')) {
+      nav.classList.remove('open');
+    }
+
+    // Näytä tai piilota header scrollin perusteella
+    if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      header.classList.remove('nav-shown');
+      header.classList.add('nav-hidden');
+    } else {
+      header.classList.remove('nav-hidden');
+      header.classList.add('nav-shown');
+    }
+
+    lastScrollY = currentScrollY;
+  });
+
+  // Alkuun varmistetaan että header on näkyvissä
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.site-header').classList.add('nav-shown');
+  });
+</script>
 </main>
 <footer id="app-footer">
   © 2025 Kim Kupiainen – Kaikki oikeudet pidätetään.
