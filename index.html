@@ -338,19 +338,31 @@
 		document.getElementById('load-entries').onclick = loadEntries;
 		}; 
 
-      window.editRow = async (index) => {
-        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
-          headers: { Authorization: 'Bearer ' + accessToken }
-        });
-        const data = await res.json();
-        const v = data.values[0];
-        ['date', 'event', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
-          document.getElementById(id).value = v[i] || '';
-        });
-        editingRow = index;
-        document.getElementById('status').textContent = `Muokataan riviä ${index}`;
-        window.scrollTo(0, 0);
-      };
+		window.editRow = async (index) => {
+		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}`, {
+			headers: { Authorization: 'Bearer ' + accessToken }
+		  });
+		  const data = await res.json();
+		  const v = data.values[0];
+
+		  // Näytetään lomake ensin, jotta kentät varmasti päivittyy
+		  document.getElementById('log-form').style.display = 'block';
+
+		  // Täytetään kentät
+		  ['date', 'event', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
+			const el = document.getElementById(id);
+			let value = v[i] || '';
+			if (id === 'date') {
+			  // Varmistetaan, että päivämäärä on ISO-muodossa
+			  value = value.split('/').reverse().join('-'); // 30/05/2025 → 2025-05-30
+			}
+			el.value = value;
+		  });
+
+		  editingRow = index;
+		  document.getElementById('status').textContent = `Muokataan riviä ${index}`;
+		  setTimeout(() => window.scrollTo(0, 0), 50);
+		};
 
 		window.deleteRow = async function(index, cardElement) {
 		  const sheetId = await getSheetIdByTitle(SHEET_TAB);
