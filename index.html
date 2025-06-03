@@ -356,42 +356,74 @@ async function createRaporttiSheet() {
       };
 
       document.getElementById('log-form').addEventListener('submit', async (e) => {
-        showLoader();
-		e.preventDefault();
-		const dateInput = document.getElementById('date').value;
-		const excelDate = (new Date(dateInput) - new Date("1899-12-30")) / (1000 * 60 * 60 * 24);
+	  showLoader();
+	  e.preventDefault();
 
-		const row = [
-		  { userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
-		  { userEnteredValue: { stringValue: document.getElementById('event').value } },
-		  { userEnteredValue: { stringValue: document.getElementById('weapon').value } },
-		  { userEnteredValue: { stringValue: document.getElementById('tt').value } },
-		  { userEnteredValue: { stringValue: document.getElementById('location').value } },
-		  { userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
-		  { userEnteredValue: { stringValue: document.getElementById('notes').value } }
-		];
-		    saveToLocalStorage("weapons", document.getElementById('weapon').value);
-			saveToLocalStorage("locations", document.getElementById('location').value);
-        if (editingRow) {
-          const range = `${SHEET_TAB}!A${editingRow + 1}`;
-          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`, {
-            method: 'PUT',
-            headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ range, values: [row] })
-          });
-          editingRow = null;
-        } else {
-          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A1:append?valueInputOption=RAW`, {
-            method: 'POST',
-            headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ values: [row] })
-          });
-        }
+	  const dateInput = document.getElementById('date').value;
+	  const excelDate = (new Date(dateInput) - new Date("1899-12-30")) / (1000 * 60 * 60 * 24);
+
+	  const row = [
+		{ userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
+		{ userEnteredValue: { stringValue: document.getElementById('event').value } },
+		{ userEnteredValue: { stringValue: document.getElementById('weapon').value } },
+		{ userEnteredValue: { stringValue: document.getElementById('tt').value } },
+		{ userEnteredValue: { stringValue: document.getElementById('location').value } },
+		{ userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
+		{ userEnteredValue: { stringValue: document.getElementById('notes').value } }
+	  ];
+
+	  saveToLocalStorage("weapons", document.getElementById('weapon').value);
+	  saveToLocalStorage("locations", document.getElementById('location').value);
+
+	  const sheetId = await getSheetIdByTitle(SHEET_TAB);
+	  if (!sheetId) {
+		document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
 		hideLoader();
-		showConfirmation(row);
-        document.getElementById('log-form').reset();
-        document.getElementById('status').textContent = 'Merkintä tallennettu.';
-      });
+		return;
+	  }
+
+	  let rowIndex;
+	  if (editingRow) {
+		rowIndex = editingRow;
+		editingRow = null;
+	  } else {
+		// Haetaan nykyinen rivimäärä
+		const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A:A`, {
+		  headers: { Authorization: 'Bearer ' + accessToken }
+		});
+		const data = await res.json();
+		rowIndex = (data.values?.length || 1); // A1 on otsikko
+	  }
+
+	  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+		method: 'POST',
+		headers: {
+		  Authorization: 'Bearer ' + accessToken,
+		  'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+		  requests: [
+			{
+			  updateCells: {
+				start: {
+				  sheetId: sheetId,
+				  rowIndex: rowIndex,
+				  columnIndex: 0
+				},
+				rows: [{ values: row }],
+				fields: "*"
+			  }
+			}
+		  ]
+		})
+	  });
+
+	  hideLoader();
+	  showConfirmation(row.map(c => c.userEnteredValue?.stringValue ?? c.userEnteredValue?.numberValue ?? ''));
+	  document.getElementById('log-form').reset();
+	  document.getElementById('status').textContent = 'Merkintä tallennettu.';
+	});
+
 
 		  window.loadEntries = async function () {
 		  document.getElementById('global-loader').style.display = 'flex';
