@@ -144,6 +144,7 @@
       document.getElementById('status').textContent = 'Muokkaus peruttu.';
     }
 	function escapeHTML(str) {
+	  if (typeof str !== 'string') str = String(str);
 	  return str.replace(/[&<>"']/g, match => ({
 		'&': '&amp;',
 		'<': '&lt;',
