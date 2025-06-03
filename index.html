@@ -52,28 +52,45 @@
     Sovellus toimii myös mobiililaitteilla, ja oppii automaattisesti aiemmin käytetyt aseet ja paikat. Tietojasi ei kerätä sivuston hallinnoijan toimesta eikä luovuteta koskaan kolmansille osapuolille tarpeettomasti.
   </p>
 </div>
-  <form id="log-form" style="display:none">
-    <input type="date" id="date" required>
-    <input type="text" id="event" placeholder="Tapahtuma" required>
-	<input list="weapons" id="weapon" placeholder="Ase / kaliiperi" required>
-	<datalist id="weapons"></datalist>
-    <select id="tt" required>
-      <option value="">Valitse toimintatapa</option>
-      <option value="TT1">TT1 – kertatuli ilman lipasta</option>
-      <option value="TT2">TT2 – kertatuli lippaalla</option>
-      <option value="TT3">TT3 – itselataava kertatuli</option>
-      <option value="TT4">TT4 – sarjatuli</option>
-    </select>
-	<input list="locations" id="location" placeholder="Paikka" required>
-	<datalist id="locations"></datalist>
-    <input type="number" id="rounds" placeholder="Laukaukset" required>
-    <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
-    <div>
-      <button type="submit" class="save">Tallenna merkintä</button>
-      <button type="button" onclick="cancelEdit()">Peru muokkaus</button>
-    </div>
+	<form id="log-form" style="display:none">
+	  <input type="date" id="date" required>
+	  <input type="text" id="event" placeholder="Tapahtuma" required>
+
+	  <select id="type" required>
+		<option value="">Valitse asetyyppi</option>
+		<option value="Pistooli">Pistooli</option>
+		<option value="Kivääri">Kivääri</option>
+		<option value="Haulikko">Haulikko</option>
+		<option value="Pienoiskivääri">Pienoiskivääri</option>
+		<option value="Muu">Muu</option>
+	  </select>
+
+	  <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
+	  <datalist id="calibers"></datalist>
+
+	  <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
+	  <datalist id="weapons"></datalist>
+
+	  <select id="tt" required>
+		<option value="">Valitse toimintatapa</option>
+		<option value="TT1">TT1 – kertatuli ilman lipasta</option>
+		<option value="TT2">TT2 – kertatuli lippaalla</option>
+		<option value="TT3">TT3 – itselataava kertatuli</option>
+		<option value="TT4">TT4 – sarjatuli</option>
+	  </select>
+
+	  <input list="locations" id="location" placeholder="Paikka" required>
+	  <datalist id="locations"></datalist>
+
+	  <input type="number" id="rounds" placeholder="Laukaukset" required>
+	  <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
+
+	  <div>
+		<button type="submit" class="save">Tallenna merkintä</button>
+		<button type="button" onclick="cancelEdit()">Peru muokkaus</button>
+	  </div>
 	  <div id="status"></div>
-  </form>
+	</form>
 
 
 	<div id="entries">
@@ -165,10 +182,12 @@
 	  const details = `
 		<p><strong>Päivämäärä:</strong> ${escapeHTML(row[0])}</p>
 		<p><strong>Tapahtuma:</strong> ${escapeHTML(row[1])}</p>
-		<p><strong>Ase:</strong> ${escapeHTML(row[2])} (${escapeHTML(row[3])})</p>
-		<p><strong>Paikka:</strong> ${escapeHTML(row[4])}</p>
-		<p><strong>Laukaukset:</strong> ${escapeHTML(row[5])}</p>
-		<p><strong>Kuvaus:</strong> ${escapeHTML(row[6])}</p>
+		<p><strong>Asetyyppi:</strong> ${escapeHTML(row[2])}</p>
+		<p><strong>Kaliiperi:</strong> ${escapeHTML(row[3])}</p>
+		<p><strong>Ase:</strong> ${escapeHTML(row[4])} (${escapeHTML(row[5])})</p>
+		<p><strong>Paikka:</strong> ${escapeHTML(row[6])}</p>
+		<p><strong>Laukaukset:</strong> ${escapeHTML(row[7])}</p>
+		<p><strong>Kuvaus:</strong> ${escapeHTML(row[8])}</p>
 	  `;
 	  document.getElementById('popup-details').innerHTML = details;
 	  document.getElementById('confirmation-popup').style.display = 'flex';
@@ -227,17 +246,19 @@
 		data: [{
 		  startRow: 0,
 		  startColumn: 0,
-		  rowData: [{
-			values: [
-			  { userEnteredValue: { stringValue: 'Päivämäärä' } },
-			  { userEnteredValue: { stringValue: 'Tapahtuma' } },
-			  { userEnteredValue: { stringValue: 'Ase' } },
-			  { userEnteredValue: { stringValue: 'Toimintatapa' } },
-			  { userEnteredValue: { stringValue: 'Paikka' } },
-			  { userEnteredValue: { stringValue: 'Laukaukset' } },
-			  { userEnteredValue: { stringValue: 'Kuvaus' } }
-			]
-		  }]
+			rowData: [{
+			  values: [
+				{ userEnteredValue: { stringValue: 'Päivämäärä' } },
+				{ userEnteredValue: { stringValue: 'Tapahtuma' } },
+				{ userEnteredValue: { stringValue: 'Asetyyppi' } }, // NEW
+				{ userEnteredValue: { stringValue: 'Kaliiperi' } }, // NEW
+				{ userEnteredValue: { stringValue: 'Ase' } },
+				{ userEnteredValue: { stringValue: 'Toimintatapa' } },
+				{ userEnteredValue: { stringValue: 'Paikka' } },
+				{ userEnteredValue: { stringValue: 'Laukaukset' } },
+				{ userEnteredValue: { stringValue: 'Kuvaus' } }
+			  ]
+			}]
 		}]
 	  }]
 	})
@@ -386,6 +407,7 @@ async function createRaporttiSheet() {
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
 		  populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
+		  populateDatalist("calibers", "calibers");
         }
       });
 
@@ -400,18 +422,21 @@ async function createRaporttiSheet() {
 	  const dateInput = document.getElementById('date').value;
 	  const excelDate = (new Date(dateInput) - new Date("1899-12-30")) / (1000 * 60 * 60 * 24);
 
-	  const row = [
-		{ userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
-		{ userEnteredValue: { stringValue: document.getElementById('event').value } },
-		{ userEnteredValue: { stringValue: document.getElementById('weapon').value } },
-		{ userEnteredValue: { stringValue: document.getElementById('tt').value } },
-		{ userEnteredValue: { stringValue: document.getElementById('location').value } },
-		{ userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
-		{ userEnteredValue: { stringValue: document.getElementById('notes').value } }
-	  ];
+		const row = [
+		  { userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
+		  { userEnteredValue: { stringValue: document.getElementById('event').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('type').value } }, // NEW
+		  { userEnteredValue: { stringValue: document.getElementById('caliber').value } }, // NEW
+		  { userEnteredValue: { stringValue: document.getElementById('weapon').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('tt').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('location').value } },
+		  { userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
+		  { userEnteredValue: { stringValue: document.getElementById('notes').value } }
+		];
 
 	  saveToLocalStorage("weapons", document.getElementById('weapon').value);
 	  saveToLocalStorage("locations", document.getElementById('location').value);
+	  saveToLocalStorage("calibers", document.getElementById('caliber').value);
 
 	  const sheetId = await getSheetIdByTitle(SHEET_TAB);
 	  if (!sheetId) {
@@ -532,7 +557,7 @@ async function createRaporttiSheet() {
 		}; 
 
 		window.editRow = async (index) => {
-		const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:G${index + 1}`, {
+		const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:I${index + 1}`, {
 		  headers: { Authorization: 'Bearer ' + accessToken }
 		});
 		  const data = await res.json();
@@ -543,7 +568,7 @@ async function createRaporttiSheet() {
 		  form.style.display = 'block';
 
 		  // Täytetään kentät turvallisesti
-		  ['date', 'event', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
+		  ['date', 'event', 'type', 'caliber', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
 			const el = document.getElementById(id);
 			let value = (v[i] !== undefined ? v[i] : '');
 			if (id === 'date' && value.includes('/')) {
@@ -618,7 +643,8 @@ async function createRaporttiSheet() {
 
 		  // skipataan header (rows[0])
 		  for (let i = 1; i < rows.length; i++) {
-			const [date, event, weapon, tt, location, rounds, notes = ""] = rows[i];
+			const [date, event, type, caliber, weapon, tt, location, rounds, notes = ""] = rows[i];
+
 
 			const block = [
 			  `${date} — ${event}`,
