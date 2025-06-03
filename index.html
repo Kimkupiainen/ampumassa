@@ -171,49 +171,64 @@
       return sheet?.properties?.sheetId;
     }
 
-    async function findOrCreateSheet() {
-      const query = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
-      const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`, {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-      const data = await driveRes.json();
+	async function findOrCreateSheet() {
+  const storedId = localStorage.getItem('ampuma_sheet_id');
+  if (storedId) {
+	spreadsheetId = storedId;
+	console.log("Käytetään tallennettua spreadsheetId:tä:", spreadsheetId);
+	return;
+  }
 
-      if (data.files?.length) {
-        spreadsheetId = data.files[0].id;
-        return;
-      }
+  const query = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+  const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,createdTime,modifiedTime)`, {
+	headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const data = await driveRes.json();
 
-      const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + accessToken,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          properties: { title: SHEET_NAME },
-          sheets: [{
-            properties: { title: SHEET_TAB },
-            data: [{
-              startRow: 0,
-              startColumn: 0,
-              rowData: [{
-                values: [
-                  { userEnteredValue: { stringValue: 'Päivämäärä' } },
-                  { userEnteredValue: { stringValue: 'Tapahtuma' } },
-                  { userEnteredValue: { stringValue: 'Ase' } },
-                  { userEnteredValue: { stringValue: 'Toimintatapa' } },
-                  { userEnteredValue: { stringValue: 'Paikka' } },
-                  { userEnteredValue: { stringValue: 'Laukaukset' } },
-                  { userEnteredValue: { stringValue: 'Kuvaus' } }
-                ]
-              }]
-            }]
-          }]
-        })
-      });
-      const json = await createRes.json();
-      spreadsheetId = json.spreadsheetId;
-    }
+  if (data.files?.length) {
+	// Tässä voisi vielä lajitella esim. createdTime mukaan
+	spreadsheetId = data.files[0].id;
+	localStorage.setItem('ampuma_sheet_id', spreadsheetId);
+	console.log("Käytetään olemassa olevaa tiedostoa:", spreadsheetId);
+	return;
+  }
+
+  // Jos ei löytynyt mitään → luodaan uusi
+  const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+	method: 'POST',
+	headers: {
+	  Authorization: 'Bearer ' + accessToken,
+	  'Content-Type': 'application/json'
+	},
+	body: JSON.stringify({
+	  properties: { title: SHEET_NAME },
+	  sheets: [{
+		properties: { title: SHEET_TAB },
+		data: [{
+		  startRow: 0,
+		  startColumn: 0,
+		  rowData: [{
+			values: [
+			  { userEnteredValue: { stringValue: 'Päivämäärä' } },
+			  { userEnteredValue: { stringValue: 'Tapahtuma' } },
+			  { userEnteredValue: { stringValue: 'Ase' } },
+			  { userEnteredValue: { stringValue: 'Toimintatapa' } },
+			  { userEnteredValue: { stringValue: 'Paikka' } },
+			  { userEnteredValue: { stringValue: 'Laukaukset' } },
+			  { userEnteredValue: { stringValue: 'Kuvaus' } }
+			]
+		  }]
+		}]
+	  }]
+	})
+  });
+
+  const json = await createRes.json();
+  spreadsheetId = json.spreadsheetId;
+  localStorage.setItem('ampuma_sheet_id', spreadsheetId);
+  console.log("Luotiin uusi spreadsheetId:", spreadsheetId);
+}
+
 
     window.onload = () => {
       tokenClient = google.accounts.oauth2.initTokenClient({
