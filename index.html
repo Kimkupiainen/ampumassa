@@ -2,6 +2,21 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
+<script>
+  const ua = navigator.userAgent || '';
+  const isLikelyWebView = (
+    ua.includes('FBAN') || ua.includes('FBAV') ||       // Facebook, Instagram
+    ua.includes('Line') ||                              // LINE
+    ua.includes('wv') ||                                // Android WebView
+    (window.navigator.standalone === false)             // iOS "web app" Safari
+  );
+
+  if (isLikelyWebView) {
+    // Ohjataan oikeaan selaimeen
+    alert("Avaa tämä sovellus tavallisessa selaimessa (esim. Chrome tai Firefox). Sinut ohjataan nyt oikeaan näkymään.");
+    window.location.replace("https://kimkupiainen.github.io/ampumassa/index.html");
+  }
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ampumapäiväkirja</title>
@@ -237,11 +252,11 @@
         callback: async (response) => {
           if (!response.access_token) return;
           accessToken = response.access_token;
+          await findOrCreateSheet();
           document.getElementById('log-form').style.display = 'block';
           document.getElementById('load-entries').style.display = 'inline';
           document.getElementById('export-pdf').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
-          await findOrCreateSheet();
 		  populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
         }
