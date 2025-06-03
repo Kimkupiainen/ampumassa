@@ -382,70 +382,75 @@ async function createRaporttiSheet() {
 	});
 
 
-		  window.loadEntries = async function () {
-		  document.getElementById('global-loader').style.display = 'flex';
-		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
-			headers: { Authorization: 'Bearer ' + accessToken }
-		  });
-		  const data = await res.json();
-		  const rows = data.values.slice(1);
-		  const totalRows = rows.length;
-		  rows.reverse();
+	window.loadEntries = async function () {
+	  document.getElementById('global-loader').style.display = 'flex';
 
-		  const container = document.getElementById('entry-cards'); // <- tämä on nyt uusi alue
-		  container.innerHTML = '';
+	  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+		headers: { Authorization: 'Bearer ' + accessToken }
+	  });
 
-		  rows.forEach((r, i) => {
-			const sheetRowIndex = totalRows - i;
+	  const data = await res.json();
+	  const rowsWithIndex = (data.values || []).slice(1).map((row, i) => ({
+		data: row,
+		rowIndex: i + 1 // koska rivi 0 on otsikko
+	  }));
 
-			const card = document.createElement('div');
-			card.className = 'entry-card';
+	  // Lajitellaan päivämäärän mukaan nousevasti (vanhimmat ensin)
+	  rowsWithIndex.sort((a, b) => new Date(a.data[0]) - new Date(b.data[0]));
 
-			const title = document.createElement('h3');
-			title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
-			card.appendChild(title);
+	  const container = document.getElementById('entry-cards');
+	  container.innerHTML = '';
 
-			const weapon = document.createElement('p');
-			weapon.textContent = `Ase: ${r[2] || ''} (${r[3] || ''})`;
-			card.appendChild(weapon);
+	  rowsWithIndex.forEach(({ data: r, rowIndex }) => {
+		const card = document.createElement('div');
+		card.className = 'entry-card';
 
-			const location = document.createElement('p');
-			location.textContent = `Paikka: ${r[4] || ''}`;
-			card.appendChild(location);
+		const title = document.createElement('h3');
+		title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
+		card.appendChild(title);
 
-			const rounds = document.createElement('p');
-			rounds.textContent = `Laukaukset: ${r[5] || ''}`;
-			card.appendChild(rounds);
+		const weapon = document.createElement('p');
+		weapon.textContent = `Ase: ${r[2] || ''} (${r[3] || ''})`;
+		card.appendChild(weapon);
 
-			const notes = document.createElement('p');
-			const label = document.createElement('strong');
-			label.textContent = 'Kuvaus:';
+		const location = document.createElement('p');
+		location.textContent = `Paikka: ${r[4] || ''}`;
+		card.appendChild(location);
 
-			notes.appendChild(label);
-			notes.appendChild(document.createElement('br'));
-			notes.appendChild(document.createTextNode(r[6] || ''));
-			card.appendChild(notes);
+		const rounds = document.createElement('p');
+		rounds.textContent = `Laukaukset: ${r[5] || ''}`;
+		card.appendChild(rounds);
 
-			const actions = document.createElement('div');
-			actions.className = 'actions';
+		const notes = document.createElement('p');
+		const label = document.createElement('strong');
+		label.textContent = 'Kuvaus:';
 
-			const editBtn = document.createElement('button');
-			editBtn.className = 'edit';
-			editBtn.textContent = 'Muokkaa';
-			editBtn.onclick = () => editRow(sheetRowIndex);
-			actions.appendChild(editBtn);
+		notes.appendChild(label);
+		notes.appendChild(document.createElement('br'));
+		notes.appendChild(document.createTextNode(r[6] || ''));
+		card.appendChild(notes);
 
-			const deleteBtn = document.createElement('button');
-			deleteBtn.className = 'delete';
-			deleteBtn.textContent = 'Poista';
-			deleteBtn.onclick = () => deleteRow(sheetRowIndex, card);
-			actions.appendChild(deleteBtn);
+		const actions = document.createElement('div');
+		actions.className = 'actions';
 
-			card.appendChild(actions);
-			container.appendChild(card);
-		  });
-		  document.getElementById('global-loader').style.display = 'none';
-		}
+		const editBtn = document.createElement('button');
+		editBtn.className = 'edit';
+		editBtn.textContent = 'Muokkaa';
+		editBtn.onclick = () => editRow(rowIndex);
+		actions.appendChild(editBtn);
+
+		const deleteBtn = document.createElement('button');
+		deleteBtn.className = 'delete';
+		deleteBtn.textContent = 'Poista';
+		deleteBtn.onclick = () => deleteRow(rowIndex, card);
+		actions.appendChild(deleteBtn);
+
+		card.appendChild(actions);
+		container.appendChild(card);
+	  });
+
+	  document.getElementById('global-loader').style.display = 'none';
+	};
 
 		document.getElementById('load-entries').onclick = loadEntries;
 		}; 
