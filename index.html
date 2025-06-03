@@ -193,6 +193,7 @@
 	spreadsheetId = storedId;
 	console.log("Käytetään tallennettua spreadsheetId:tä:", spreadsheetId);
 	await createRaporttiSheet();
+	await applyDateFormatting();
 	return;
   }
 
@@ -208,6 +209,7 @@
 	localStorage.setItem('ampuma_sheet_id', spreadsheetId);
 	console.log("Käytetään olemassa olevaa tiedostoa:", spreadsheetId);
 	await createRaporttiSheet();
+	await applyDateFormatting();
 	return;
   }
 
@@ -246,6 +248,41 @@
   localStorage.setItem('ampuma_sheet_id', spreadsheetId);
   console.log("Luotiin uusi spreadsheetId:", spreadsheetId);
   await createRaporttiSheet();
+  await applyDateFormatting();
+}
+async function applyDateFormatting() {
+  const sheetId = await getSheetIdByTitle(SHEET_TAB);
+  if (!sheetId) return;
+
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startColumnIndex: 0,
+              endColumnIndex: 1
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "DATE",
+                  pattern: "yyyy-mm-dd"
+                }
+              }
+            },
+            fields: "userEnteredFormat.numberFormat"
+          }
+        }
+      ]
+    })
+  });
 }
 async function createRaporttiSheet() {
   // Tarkistetaan ensin onko jo olemassa
