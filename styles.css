@@ -319,3 +319,21 @@ button.delete:hover {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+button.pdf-button {
+  background: transparent;
+  border: 2px dashed var(--primary);
+  color: var(--primary);
+  font-size: 1.3rem;
+  font-weight: 600;
+  padding: 1em;
+  margin-top: 1em;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  max-width: 720px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+button.pdf-button:hover {
+  background: rgba(255, 136, 0, 0.1);
+  transform: scale(1.02);
