@@ -102,17 +102,8 @@
     display: none;
   }
 </style>
-		<div id="report-dropdown" style="display: none; margin-top: 1em;">
-  <label for="report-select"><strong>Valitse raportti:</strong></label>
-  <select id="report-select">
-    <option value="pistol-2v">2v pistooliraportti</option>
-    <option value="all-1v">1v aktiivisuus (kaikki asetyypit)</option>
-    <option value="all-2v">2v aktiivisuus (kaikki asetyypit)</option>
-    <option value="last-month">Viimeisin kuukausi</option>
-    <option value="custom">Valitse aikaväli ja tyyppi...</option>
-  </select>
-  <button id="generate-report" class="pdf-button">Luo raportti</button>
-</div>
+		<button id="export-pdf" class="pdf-button">📄 Lataa ampumahistoriasi PDF:nä</button>
+		<button id="export-pistol-report" class="pdf-button">🎯 Pistooliraportti (2v)</button>
 	  </div>
 	  <div id="entry-cards"></div> <!-- <- tämä lisättiin -->
 	</div>
