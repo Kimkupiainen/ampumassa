@@ -97,6 +97,7 @@
 	  <div>
 		<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
 		<button id="export-pdf" style="display:none">📄 Lataa PDF</button>
+		<button id="export-pistol-report" style="display:none">📄 Pistooliraportti (2v) todisteluun</button>
 	  </div>
 	  <div id="entry-cards"></div> <!-- <- tämä lisättiin -->
 	</div>
@@ -404,7 +405,9 @@ async function createRaporttiSheet() {
           document.getElementById('log-form').style.display = 'block';
           document.getElementById('load-entries').style.display = 'inline';
           document.getElementById('export-pdf').style.display = 'inline';
+		  document.getElementById('export-pistol-report').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
+		  
 		  populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
 		  populateDatalist("calibers", "calibers");
@@ -667,6 +670,71 @@ async function createRaporttiSheet() {
 		  }
 
 		  doc.save("ampumapaivakirja.pdf");
+		};
+		document.getElementById('export-pistol-report').onclick = async () => {
+		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+			headers: { Authorization: 'Bearer ' + accessToken }
+		  });
+		  const data = await res.json();
+		  const rows = data.values;
+
+		  const now = new Date();
+		  const twoYearsAgo = new Date();
+		  twoYearsAgo.setFullYear(now.getFullYear() - 2);
+
+		  const { jsPDF } = window.jspdf;
+		  const doc = new jsPDF();
+		  const lineHeight = 5.5;
+		  let y = 20;
+
+		  const formatDate = (d) => d.toISOString().split("T")[0];
+
+		  doc.setFontSize(16);
+		  doc.text("Pistooliraportti – 2v", 10, 15);
+		  doc.setFontSize(10);
+		  doc.text(`Ajanjakso: ${formatDate(twoYearsAgo)} – ${formatDate(now)}`, 10, y);
+		  y += 7;
+
+		  let pistolRows = rows.slice(1).filter(row => {
+			const date = new Date(row[0]);
+			return !isNaN(date) && date >= twoYearsAgo && row[2]?.toLowerCase() === 'pistooli';
+		  });
+
+		  let totalRounds = 0;
+		  pistolRows.forEach(r => {
+			const rounds = parseInt(r[7]) || 0;
+			totalRounds += rounds;
+		  });
+
+		  doc.text(`Käyntejä: ${pistolRows.length}`, 10, y);
+		  y += 5;
+		  doc.text(`Laukauksia yhteensä: ${totalRounds}`, 10, y);
+		  y += 10;
+
+		  pistolRows.forEach(r => {
+			const [date, event, type, caliber, weapon, tt, location, rounds, notes = ""] = r;
+
+			const block = [
+			  `${date} — ${event}`,
+			  `${weapon} (${tt}) @ ${location} | ${rounds} laukausta`,
+			  `Huomiot: ${notes || "-"}`
+			];
+
+			for (let line of block) {
+			  const split = doc.splitTextToSize(line, 180);
+			  doc.text(split, 10, y);
+			  y += split.length * lineHeight;
+			}
+
+			y += 5;
+
+			if (y > 270) {
+			  doc.addPage();
+			  y = 20;
+			}
+		  });
+
+		  doc.save("pistooliraportti_2v.pdf");
 		};
 
 </script>
