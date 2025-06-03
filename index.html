@@ -96,7 +96,13 @@
 	<div id="entries">
 	  <div>
 		<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
-		<button id="export-pdf" class="pdf-button">📄 Lataa kaikki merkinnät PDF:nä</button>
+		<style>
+  #export-pdf,
+  #export-pistol-report {
+    display: none;
+  }
+</style>
+		<button id="export-pdf" class="pdf-button">📄 Lataa ampumahistoriasi PDF:nä</button>
 		<button id="export-pistol-report" class="pdf-button">🎯 Pistooliraportti (2v)</button>
 	  </div>
 	  <div id="entry-cards"></div> <!-- <- tämä lisättiin -->

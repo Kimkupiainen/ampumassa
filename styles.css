@@ -103,7 +103,6 @@ form button,
 .actions button,
 .donation-button,
 #login-btn,
-#export-pdf,
 #load-entries {
   background: var(--primary);
   color: #000;
