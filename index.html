@@ -191,6 +191,7 @@
   if (storedId) {
 	spreadsheetId = storedId;
 	console.log("Käytetään tallennettua spreadsheetId:tä:", spreadsheetId);
+	await createRaporttiSheet();
 	return;
   }
 
