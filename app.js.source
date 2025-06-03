@@ -281,8 +281,8 @@ async function createRaporttiSheet() {
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-		document.getElementById('login-btn').style.display = 'none';
         callback: async (response) => {
+		  document.getElementById('login-btn').style.display = 'none';
 	      showLoader();
           if (!response.access_token){
 		  hideLoader();
