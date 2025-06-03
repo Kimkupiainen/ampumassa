@@ -395,8 +395,8 @@ async function createRaporttiSheet() {
 		rowIndex: i + 1 // koska rivi 0 on otsikko
 	  }));
 
-	  // Lajitellaan päivämäärän mukaan nousevasti (vanhimmat ensin)
-	  rowsWithIndex.sort((a, b) => new Date(a.data[0]) - new Date(b.data[0]));
+	  // Lajitellaan päivämäärän mukaan nousevasti (Uusimmat ensin)
+	  rowsWithIndex.sort((a, b) => new Date(b.data[0]) - new Date(a.data[0]));
 
 	  const container = document.getElementById('entry-cards');
 	  container.innerHTML = '';
