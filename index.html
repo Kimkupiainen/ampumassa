@@ -358,15 +358,18 @@ async function createRaporttiSheet() {
       document.getElementById('log-form').addEventListener('submit', async (e) => {
         showLoader();
 		e.preventDefault();
-        const row = [
-          document.getElementById('date').value,
-          document.getElementById('event').value,
-          document.getElementById('weapon').value,
-          document.getElementById('tt').value,
-          document.getElementById('location').value,
-          document.getElementById('rounds').value,
-          document.getElementById('notes').value
-        ];
+		const dateInput = document.getElementById('date').value;
+		const excelDate = (new Date(dateInput) - new Date("1899-12-30")) / (1000 * 60 * 60 * 24);
+
+		const row = [
+		  { userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
+		  { userEnteredValue: { stringValue: document.getElementById('event').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('weapon').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('tt').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('location').value } },
+		  { userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
+		  { userEnteredValue: { stringValue: document.getElementById('notes').value } }
+		];
 		    saveToLocalStorage("weapons", document.getElementById('weapon').value);
 			saveToLocalStorage("locations", document.getElementById('location').value);
         if (editingRow) {
