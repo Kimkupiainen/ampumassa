@@ -1,0 +1,650 @@
+    const CLIENT_ID = '131369731464-onbrnu5hlf96r06bn2nhuas9fk1r2mmb.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+    const SHEET_NAME = 'ampumapaivakirja';
+    const SHEET_TAB = 'Merkinnät';
+    let accessToken = null;
+    let spreadsheetId = null;
+    let editingRow = null;
+    let tokenClient;
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+    }
+
+    function saveToLocalStorage(key, value) {
+	  if (!value) return;
+	  let existing = JSON.parse(localStorage.getItem(key) || "[]");
+
+	  // Normalize existing for comparison only
+	  const normalized = existing.map(v => v.trim().toLowerCase());
+	  const candidate = value.trim().toLowerCase();
+
+	  if (!normalized.includes(candidate)) {
+		existing.push(value.trim()); // keep original casing for UX
+		localStorage.setItem(key, JSON.stringify(existing));
+	  }
+	}
+	
+	function populateDatalist(id, key) {
+      const list = document.getElementById(id);
+      const items = JSON.parse(localStorage.getItem(key) || "[]");
+	  items.sort()
+      list.innerHTML = '';
+	items.forEach(val => {
+	  const opt = document.createElement('option');
+	  opt.value = val;
+	  list.appendChild(opt);
+	});
+    }
+	document.querySelector('.menu-toggle').onclick = () => {
+  document.querySelector('.nav-links').classList.toggle('open');
+};
+    function cancelEdit() {
+      document.getElementById('log-form').reset();
+      editingRow = null;
+      document.getElementById('status').textContent = 'Muokkaus peruttu.';
+    }
+	function escapeHTML(str) {
+	  if (typeof str !== 'string') str = String(str);
+	  return str.replace(/[&<>"']/g, match => ({
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		'"': '&quot;',
+		"'": '&#039;'
+	  }[match]));
+	}
+		function showLoader() {
+	  document.getElementById('loader').style.display = 'flex';
+	}
+
+	function hideLoader() {
+	  document.getElementById('loader').style.display = 'none';
+	}
+
+	function showConfirmation(row) {
+	  const details = `
+		<p><strong>Päivämäärä:</strong> ${escapeHTML(row[0])}</p>
+		<p><strong>Tapahtuma:</strong> ${escapeHTML(row[1])}</p>
+		<p><strong>Asetyyppi:</strong> ${escapeHTML(row[2])}</p>
+		<p><strong>Kaliiperi:</strong> ${escapeHTML(row[3])}</p>
+		<p><strong>Ase:</strong> ${escapeHTML(row[4])} (${escapeHTML(row[5])})</p>
+		<p><strong>Paikka:</strong> ${escapeHTML(row[6])}</p>
+		<p><strong>Laukaukset:</strong> ${escapeHTML(row[7])}</p>
+		<p><strong>Kuvaus:</strong> ${escapeHTML(row[8])}</p>
+	  `;
+	  document.getElementById('popup-details').innerHTML = details;
+	  document.getElementById('confirmation-popup').style.display = 'flex';
+	}
+
+	function closeConfirmation() {
+	  document.getElementById('confirmation-popup').style.display = 'none';
+	}
+
+    async function getSheetIdByTitle(title) {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      const data = await res.json();
+      const sheet = data.sheets.find(s => s.properties.title === title);
+      return sheet?.properties?.sheetId;
+    }
+
+	async function findOrCreateSheet() {
+  const storedId = localStorage.getItem('ampuma_sheet_id');
+  if (storedId) {
+	spreadsheetId = storedId;
+	console.log("Käytetään tallennettua spreadsheetId:tä:", spreadsheetId);
+	await createRaporttiSheet();
+	await applyDateFormatting();
+	return;
+  }
+
+  const query = `name='${SHEET_NAME}' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false`;
+  const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name,createdTime,modifiedTime)`, {
+	headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const data = await driveRes.json();
+
+  if (data.files?.length) {
+	// Tässä voisi vielä lajitella esim. createdTime mukaan
+	spreadsheetId = data.files[0].id;
+	localStorage.setItem('ampuma_sheet_id', spreadsheetId);
+	console.log("Käytetään olemassa olevaa tiedostoa:", spreadsheetId);
+	await createRaporttiSheet();
+	await applyDateFormatting();
+	return;
+  }
+
+  // Jos ei löytynyt mitään → luodaan uusi
+  const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+	method: 'POST',
+	headers: {
+	  Authorization: 'Bearer ' + accessToken,
+	  'Content-Type': 'application/json'
+	},
+	body: JSON.stringify({
+	  properties: { title: SHEET_NAME },
+	  sheets: [{
+		properties: { title: SHEET_TAB },
+		data: [{
+		  startRow: 0,
+		  startColumn: 0,
+			rowData: [{
+			  values: [
+				{ userEnteredValue: { stringValue: 'Päivämäärä' } },
+				{ userEnteredValue: { stringValue: 'Tapahtuma' } },
+				{ userEnteredValue: { stringValue: 'Asetyyppi' } }, // NEW
+				{ userEnteredValue: { stringValue: 'Kaliiperi' } }, // NEW
+				{ userEnteredValue: { stringValue: 'Ase' } },
+				{ userEnteredValue: { stringValue: 'Toimintatapa' } },
+				{ userEnteredValue: { stringValue: 'Paikka' } },
+				{ userEnteredValue: { stringValue: 'Laukaukset' } },
+				{ userEnteredValue: { stringValue: 'Kuvaus' } }
+			  ]
+			}]
+		}]
+	  }]
+	})
+  });
+
+  const json = await createRes.json();
+  spreadsheetId = json.spreadsheetId;
+  localStorage.setItem('ampuma_sheet_id', spreadsheetId);
+  console.log("Luotiin uusi spreadsheetId:", spreadsheetId);
+  await createRaporttiSheet();
+  await applyDateFormatting();
+}
+async function applyDateFormatting() {
+  const sheetId = await getSheetIdByTitle(SHEET_TAB);
+  if (!sheetId) return;
+
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          repeatCell: {
+            range: {
+              sheetId: sheetId,
+              startColumnIndex: 0,
+              endColumnIndex: 1
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "DATE",
+                  pattern: "yyyy-mm-dd"
+                }
+              }
+            },
+            fields: "userEnteredFormat.numberFormat"
+          }
+        }
+      ]
+    })
+  });
+}
+async function createRaporttiSheet() {
+  // Tarkistetaan ensin onko jo olemassa
+  const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+    headers: { Authorization: 'Bearer ' + accessToken }
+  });
+  const meta = await metaRes.json();
+  const existingSheet = meta.sheets.find(s => s.properties.title === "Raportti");
+  if (existingSheet) {
+    console.log("Raportti-välilehti on jo olemassa.");
+    return;
+  }
+
+  // Luodaan uusi välilehti
+  const addSheetRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          addSheet: {
+            properties: {
+              title: "Raportti"
+            }
+          }
+        }
+      ]
+    })
+  });
+
+  const addSheetData = await addSheetRes.json();
+  const newSheetId = addSheetData.replies?.[0]?.addSheet?.properties?.sheetId;
+  if (!newSheetId) {
+    console.error("Raportti-välilehden luonti epäonnistui.");
+    return;
+  }
+
+  // Nyt lisätään kaavat oikeaan sheetId:hen
+  const values = [
+    {
+      values: [
+        { userEnteredValue: { stringValue: "Toimintatapa" } },
+        { userEnteredValue: { stringValue: "1v Käynnit" } },
+        { userEnteredValue: { stringValue: "1v Laukaukset" } },
+        { userEnteredValue: { stringValue: "2v Käynnit" } },
+        { userEnteredValue: { stringValue: "2v Laukaukset" } }
+      ]
+    },
+    ...["TT1", "TT2", "TT3", "TT4"].map(tt => ({
+      values: [
+        { userEnteredValue: { stringValue: tt } },
+        { userEnteredValue: { formulaValue: `=COUNTIFS(Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-365)` } },
+        { userEnteredValue: { formulaValue: `=SUMIFS(Merkinnät!F:F, Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-365)` } },
+        { userEnteredValue: { formulaValue: `=COUNTIFS(Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-730)` } },
+        { userEnteredValue: { formulaValue: `=SUMIFS(Merkinnät!F:F, Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-730)` } }
+      ]
+    }))
+  ];
+
+  const updateCellsReq = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          updateCells: {
+            rows: values,
+            fields: "userEnteredValue",
+            start: {
+              sheetId: newSheetId,
+              rowIndex: 0,
+              columnIndex: 0
+            }
+          }
+        }
+      ]
+    })
+  });
+
+  console.log("Raportti-välilehti luotu ja kaavat syötetty.");
+}
+
+
+    window.onload = () => {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: async (response) => {
+          if (!response.access_token) return;
+          accessToken = response.access_token;
+          await findOrCreateSheet();
+          document.getElementById('log-form').style.display = 'block';
+          document.getElementById('load-entries').style.display = 'inline';
+          document.getElementById('export-pdf').style.display = 'inline';
+		  document.getElementById('export-pistol-report').style.display = 'inline';
+          document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
+		  
+		  populateDatalist("weapons", "weapons");
+          populateDatalist("locations", "locations");
+		  populateDatalist("calibers", "calibers");
+        }
+      });
+
+      document.getElementById('login-btn').onclick = () => {
+        tokenClient.requestAccessToken();
+      };
+
+      document.getElementById('log-form').addEventListener('submit', async (e) => {
+	  showLoader();
+	  e.preventDefault();
+
+	  const dateInput = document.getElementById('date').value;
+	  const excelDate = (new Date(dateInput) - new Date("1899-12-30")) / (1000 * 60 * 60 * 24);
+
+		const row = [
+		  { userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
+		  { userEnteredValue: { stringValue: document.getElementById('event').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('type').value } }, // NEW
+		  { userEnteredValue: { stringValue: document.getElementById('caliber').value } }, // NEW
+		  { userEnteredValue: { stringValue: document.getElementById('weapon').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('tt').value } },
+		  { userEnteredValue: { stringValue: document.getElementById('location').value } },
+		  { userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
+		  { userEnteredValue: { stringValue: document.getElementById('notes').value } }
+		];
+
+	  saveToLocalStorage("weapons", document.getElementById('weapon').value);
+	  saveToLocalStorage("locations", document.getElementById('location').value);
+	  saveToLocalStorage("calibers", document.getElementById('caliber').value);
+
+	  const sheetId = await getSheetIdByTitle(SHEET_TAB);
+	  if (!sheetId) {
+		document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
+		hideLoader();
+		return;
+	  }
+
+	  let rowIndex;
+	  if (editingRow) {
+		rowIndex = editingRow;
+		editingRow = null;
+	  } else {
+		// Haetaan nykyinen rivimäärä
+		const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A:A`, {
+		  headers: { Authorization: 'Bearer ' + accessToken }
+		});
+		const data = await res.json();
+		rowIndex = (data.values?.length || 1); // A1 on otsikko
+	  }
+
+	  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+		method: 'POST',
+		headers: {
+		  Authorization: 'Bearer ' + accessToken,
+		  'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+		  requests: [
+			{
+			  updateCells: {
+				start: {
+				  sheetId: sheetId,
+				  rowIndex: rowIndex,
+				  columnIndex: 0
+				},
+				rows: [{ values: row }],
+				fields: "*"
+			  }
+			}
+		  ]
+		})
+	  });
+
+	  hideLoader();
+	  showConfirmation(row.map(c => c.userEnteredValue?.stringValue ?? c.userEnteredValue?.numberValue ?? ''));
+	  document.getElementById('log-form').reset();
+	  document.getElementById('status').textContent = 'Merkintä tallennettu.';
+	});
+
+
+		  window.loadEntries = async function () {
+		  document.getElementById('global-loader').style.display = 'flex';
+		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+			headers: { Authorization: 'Bearer ' + accessToken }
+		  });
+		  const data = await res.json();
+		  const rows = data.values.slice(1);
+		  const totalRows = rows.length;
+		  rows.reverse();
+
+		  const container = document.getElementById('entry-cards'); // <- tämä on nyt uusi alue
+		  container.innerHTML = '';
+
+		  rows.forEach((r, i) => {
+			const sheetRowIndex = totalRows - i;
+
+			const card = document.createElement('div');
+			card.className = 'entry-card';
+
+			const title = document.createElement('h3');
+			title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
+			card.appendChild(title);
+
+			const weapon = document.createElement('p');
+			weapon.textContent = `Ase: ${r[2] || ''} (${r[3] || ''})`;
+			card.appendChild(weapon);
+
+			const location = document.createElement('p');
+			location.textContent = `Paikka: ${r[4] || ''}`;
+			card.appendChild(location);
+
+			const rounds = document.createElement('p');
+			rounds.textContent = `Laukaukset: ${r[5] || ''}`;
+			card.appendChild(rounds);
+
+			const notes = document.createElement('p');
+			const label = document.createElement('strong');
+			label.textContent = 'Kuvaus:';
+
+			notes.appendChild(label);
+			notes.appendChild(document.createElement('br'));
+			notes.appendChild(document.createTextNode(r[6] || ''));
+			card.appendChild(notes);
+
+			const actions = document.createElement('div');
+			actions.className = 'actions';
+
+			const editBtn = document.createElement('button');
+			editBtn.className = 'edit';
+			editBtn.textContent = 'Muokkaa';
+			editBtn.onclick = () => editRow(sheetRowIndex);
+			actions.appendChild(editBtn);
+
+			const deleteBtn = document.createElement('button');
+			deleteBtn.className = 'delete';
+			deleteBtn.textContent = 'Poista';
+			deleteBtn.onclick = () => deleteRow(sheetRowIndex, card);
+			actions.appendChild(deleteBtn);
+
+			card.appendChild(actions);
+			container.appendChild(card);
+		  });
+		  document.getElementById('global-loader').style.display = 'none';
+		}
+
+		document.getElementById('load-entries').onclick = loadEntries;
+		}; 
+
+		window.editRow = async (index) => {
+		const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:I${index + 1}`, {
+		  headers: { Authorization: 'Bearer ' + accessToken }
+		});
+		  const data = await res.json();
+		  const v = data.values?.[0] || [];
+
+		  // Näytetään lomake ennen kenttien täyttöä
+		  const form = document.getElementById('log-form');
+		  form.style.display = 'block';
+
+		  // Täytetään kentät turvallisesti
+		  ['date', 'event', 'type', 'caliber', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
+			const el = document.getElementById(id);
+			let value = (v[i] !== undefined ? v[i] : '');
+			if (id === 'date' && value.includes('/')) {
+			  value = value.split('/').reverse().join('-');
+			}
+			el.value = value;
+		  });
+
+		  editingRow = index;
+		  document.getElementById('status').textContent = `Muokataan riviä ${index}`;
+
+		  // Scrollataan ylös pienen viiveen jälkeen
+		  setTimeout(() => window.scrollTo(0, 0), 50);
+		};
+
+
+		window.deleteRow = async function(index, cardElement) {
+		  const sheetId = await getSheetIdByTitle(SHEET_TAB);
+		  if (!sheetId) {
+			document.getElementById('status').textContent = 'Taulukkoa ei löytynyt.';
+			return;
+		  }
+
+		  // Harmaannuta kortti ja näytä tila
+		  cardElement.style.opacity = '0.5';
+		  cardElement.querySelector('.actions').innerHTML = '<em>Poistetaan...</em>';
+
+		  const request = {
+			requests: [{
+			  deleteDimension: {
+				range: {
+				  sheetId: sheetId,
+				  dimension: 'ROWS',
+				  startIndex: index,
+				  endIndex: index + 1
+				}
+			  }
+			}]
+		  };
+
+		  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+			method: 'POST',
+			headers: {
+			  Authorization: 'Bearer ' + accessToken,
+			  'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(request)
+		  });
+
+		  // Poista kortti näkyvistä heti
+		  cardElement.remove();
+
+		  document.getElementById('status').textContent = 'Rivi poistettu.';
+		};
+  
+		document.getElementById('export-pdf').onclick = async () => {
+		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+			headers: { Authorization: 'Bearer ' + accessToken }
+		  });
+		  const data = await res.json();
+		  const rows = data.values;
+
+		  const { jsPDF } = window.jspdf;
+		  const doc = new jsPDF();
+		  const lineHeight = 5.5; 
+		  let y = 20;
+
+		  doc.setFontSize(16);
+		  doc.text("Ampumapäiväkirja", 10, 15);
+		  doc.setFontSize(10);         // aiemmin 12
+ 
+
+		  // skipataan header (rows[0])
+		  for (let i = 1; i < rows.length; i++) {
+			const [date, event, type, caliber, weapon, tt, location, rounds, notes = ""] = rows[i];
+
+
+			const block = [
+			  `${date} — ${event}`,
+			  `${weapon} (${tt}) @ ${location} | ${rounds} laukausta`,
+			  `Huomiot: ${notes || "-"}`
+			];
+
+			for (let line of block) {
+			  const split = doc.splitTextToSize(line, 180); // automaattinen rivinvaihto
+			  doc.text(split, 10, y);
+			  y += split.length * lineHeight;
+			}
+
+			y += 5; // väli merkintöjen väliin
+
+			if (y > 270) {
+			  doc.addPage();
+			  y = 20;
+			}
+		  }
+
+		  doc.save("ampumapaivakirja.pdf");
+		};
+		document.getElementById('export-pistol-report').onclick = async () => {
+		  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`, {
+			headers: { Authorization: 'Bearer ' + accessToken }
+		  });
+		  const data = await res.json();
+		  const rows = data.values;
+
+		  const now = new Date();
+		  const twoYearsAgo = new Date();
+		  twoYearsAgo.setFullYear(now.getFullYear() - 2);
+
+		  const { jsPDF } = window.jspdf;
+		  const doc = new jsPDF();
+		  const lineHeight = 5.5;
+		  let y = 20;
+
+		  const formatDate = (d) => d.toISOString().split("T")[0];
+
+		  doc.setFontSize(16);
+		  doc.text("Pistooliraportti – 2v", 10, 15);
+		  doc.setFontSize(10);
+		  doc.text(`Ajanjakso: ${formatDate(twoYearsAgo)} – ${formatDate(now)}`, 10, y);
+		  y += 7;
+
+		  let pistolRows = rows.slice(1).filter(row => {
+			const date = new Date(row[0]);
+			return !isNaN(date) && date >= twoYearsAgo && row[2]?.toLowerCase() === 'pistooli';
+		  });
+
+		  let totalRounds = 0;
+		  pistolRows.forEach(r => {
+			const rounds = parseInt(r[7]) || 0;
+			totalRounds += rounds;
+		  });
+
+		  doc.text(`Käyntejä: ${pistolRows.length}`, 10, y);
+		  y += 5;
+		  doc.text(`Laukauksia yhteensä: ${totalRounds}`, 10, y);
+		  y += 10;
+
+		  pistolRows.forEach(r => {
+			const [date, event, type, caliber, weapon, tt, location, rounds, notes = ""] = r;
+
+			const block = [
+			  `${date} — ${event}`,
+			  `${weapon} (${tt}) @ ${location} | ${rounds} laukausta`,
+			  `Huomiot: ${notes || "-"}`
+			];
+
+			for (let line of block) {
+			  const split = doc.splitTextToSize(line, 180);
+			  doc.text(split, 10, y);
+			  y += split.length * lineHeight;
+			}
+
+			y += 5;
+
+			if (y > 270) {
+			  doc.addPage();
+			  y = 20;
+			}
+		  });
+
+		  doc.save("pistooliraportti_2v.pdf");
+		};
+
+  let lastScrollY = window.scrollY;
+  const header = document.querySelector('.site-header');
+  const nav = document.querySelector('.nav-links');
+
+  window.addEventListener('scroll', () => {
+    const currentScrollY = window.scrollY;
+
+    // Sulje valikko jos auki
+    if (nav.classList.contains('open')) {
+      nav.classList.remove('open');
+    }
+
+    // Näytä tai piilota header scrollin perusteella
+    if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      header.classList.remove('nav-shown');
+      header.classList.add('nav-hidden');
+    } else {
+      header.classList.remove('nav-hidden');
+      header.classList.add('nav-shown');
+    }
+
+    lastScrollY = currentScrollY;
+  });
+
+  // Alkuun varmistetaan että header on näkyvissä
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.site-header').classList.add('nav-shown');
+  });
