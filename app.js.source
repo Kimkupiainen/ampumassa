@@ -74,12 +74,13 @@
 		<p><strong>Kuvaus:</strong> ${escapeHTML(row[8])}</p>
 	  `;
 	  document.getElementById('popup-details').innerHTML = details;
-	  document.getElementById('confirmation-popup').style.display = 'flex';
+	  document.getElementById('confirmation-modal').style.display = 'flex';
+	  document.getElementById('close-modal').focus(); // accessibility
 	}
 
-	function closeConfirmation() {
-	  document.getElementById('confirmation-popup').style.display = 'none';
-	}
+	document.getElementById('close-modal').addEventListener('click', () => {
+	  document.getElementById('confirmation-modal').style.display = 'none';
+	});
 
     async function getSheetIdByTitle(title) {
       const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {

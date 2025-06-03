@@ -102,8 +102,8 @@
     display: none;
   }
 </style>
-		<button id="export-pdf" class="pdf-button">📄 Lataa ampumahistoriasi PDF:nä</button>
-		<button id="export-pistol-report" class="pdf-button">🎯 Pistooliraportti (2v)</button>
+		<button id="export-pdf" class="pdf-button">🎯 Lataa ampumahistoriasi PDF:nä</button>
+		<button id="export-pistol-report" class="pdf-button">🔫 Pistooliraportti (2v)</button>
 	  </div>
 	  <div id="entry-cards"></div> <!-- <- tämä lisättiin -->
 	</div>
@@ -113,11 +113,11 @@
 	</div>
 
 	<!-- Popup confirmation -->
-	<div id="confirmation-popup" style="display: none;">
-	  <div class="popup-content">
-		<h3>Merkintä lisätty</h3>
+	<div id="confirmation-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display:none;">
+	  <div class="modal-content">
+		<h3 id="modal-title">Merkintä lisätty</h3>
 		<div id="popup-details"></div>
-		<button onclick="closeConfirmation()">OK</button>
+		<button id="close-modal">OK</button>
 	  </div>
 	</div>
 
