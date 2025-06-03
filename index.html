@@ -245,70 +245,91 @@
   console.log("Luotiin uusi spreadsheetId:", spreadsheetId);
   await createRaporttiSheet();
 }
-// Luo uusi "Raportti"-välilehti ja täyttää laskentakaavat TT1–TT4:lle
 async function createRaporttiSheet() {
-  const sheetSetup = {
-    requests: [
-      {
-        addSheet: {
-          properties: {
-            title: "Raportti"
-          }
-        }
-      },
-      {
-        updateCells: {
-          rows: [
-            {
-              values: [
-                { userEnteredValue: { stringValue: "Toimintatapa" } },
-                { userEnteredValue: { stringValue: "1v Käynnit" } },
-                { userEnteredValue: { stringValue: "1v Laukaukset" } },
-                { userEnteredValue: { stringValue: "2v Käynnit" } },
-                { userEnteredValue: { stringValue: "2v Laukaukset" } }
-              ]
-            },
-            ...["TT1", "TT2", "TT3", "TT4"].map(tt => ({
-              values: [
-                { userEnteredValue: { stringValue: tt } },
-                { userEnteredValue: { formulaValue: `=COUNTIFS(Merkinnät!D:D, \"${tt}\", Merkinnät!A:A, \">\"&TODAY()-365)` } },
-                { userEnteredValue: { formulaValue: `=SUMIFS(Merkinnät!F:F, Merkinnät!D:D, \"${tt}\", Merkinnät!A:A, \">\"&TODAY()-365)` } },
-                { userEnteredValue: { formulaValue: `=COUNTIFS(Merkinnät!D:D, \"${tt}\", Merkinnät!A:A, \">\"&TODAY()-730)` } },
-                { userEnteredValue: { formulaValue: `=SUMIFS(Merkinnät!F:F, Merkinnät!D:D, \"${tt}\", Merkinnät!A:A, \">\"&TODAY()-730)` } }
-              ]
-            }))
-          ],
-          fields: "userEnteredValue",
-          start: {
-            sheetId: null, // Asetetaan erikseen alla
-            rowIndex: 0,
-            columnIndex: 0
-          }
-        }
-      }
-    ]
-  };
-
-  // Haetaan sheetId "Raportti"-välilehdelle, jotta voidaan syöttää solut
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+  // Tarkistetaan ensin onko jo olemassa
+  const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
     headers: { Authorization: 'Bearer ' + accessToken }
   });
-  const meta = await res.json();
-  const raporttiSheet = meta.sheets.find(s => s.properties.title === "Raportti");
-
-  if (!raporttiSheet) {
-    const updateRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + accessToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(sheetSetup)
-    });
-    console.log("Raportti-välilehti luotu ja kaavat syötetty.");
-  } else {
+  const meta = await metaRes.json();
+  const existingSheet = meta.sheets.find(s => s.properties.title === "Raportti");
+  if (existingSheet) {
     console.log("Raportti-välilehti on jo olemassa.");
+    return;
   }
+
+  // Luodaan uusi välilehti
+  const addSheetRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          addSheet: {
+            properties: {
+              title: "Raportti"
+            }
+          }
+        }
+      ]
+    })
+  });
+
+  const addSheetData = await addSheetRes.json();
+  const newSheetId = addSheetData.replies?.[0]?.addSheet?.properties?.sheetId;
+  if (!newSheetId) {
+    console.error("Raportti-välilehden luonti epäonnistui.");
+    return;
+  }
+
+  // Nyt lisätään kaavat oikeaan sheetId:hen
+  const values = [
+    {
+      values: [
+        { userEnteredValue: { stringValue: "Toimintatapa" } },
+        { userEnteredValue: { stringValue: "1v Käynnit" } },
+        { userEnteredValue: { stringValue: "1v Laukaukset" } },
+        { userEnteredValue: { stringValue: "2v Käynnit" } },
+        { userEnteredValue: { stringValue: "2v Laukaukset" } }
+      ]
+    },
+    ...["TT1", "TT2", "TT3", "TT4"].map(tt => ({
+      values: [
+        { userEnteredValue: { stringValue: tt } },
+        { userEnteredValue: { formulaValue: `=COUNTIFS(Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-365)` } },
+        { userEnteredValue: { formulaValue: `=SUMIFS(Merkinnät!F:F, Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-365)` } },
+        { userEnteredValue: { formulaValue: `=COUNTIFS(Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-730)` } },
+        { userEnteredValue: { formulaValue: `=SUMIFS(Merkinnät!F:F, Merkinnät!D:D, "${tt}", Merkinnät!A:A, ">"&TODAY()-730)` } }
+      ]
+    }))
+  ];
+
+  const updateCellsReq = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          updateCells: {
+            rows: values,
+            fields: "userEnteredValue",
+            start: {
+              sheetId: newSheetId,
+              rowIndex: 0,
+              columnIndex: 0
+            }
+          }
+        }
+      ]
+    })
+  });
+
+  console.log("Raportti-välilehti luotu ja kaavat syötetty.");
 }
 
 
