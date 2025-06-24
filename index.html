@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
+<link rel="icon" href="ampumassalogo.png">
 <script>
   const ua = navigator.userAgent || '';
   const isLikelyWebView = (
@@ -29,9 +30,10 @@
 <div>
 <header class="site-header">
   <div class="nav-container">
-	<div class="brand">AMPUMASSA</div>
+	<div class="brand"></div>
 	<button class="menu-toggle" aria-label="Valikko">☰</button>
     <nav class="nav-links">
+	  <img src="ampumassalogo.png" alt="Ampumassa logo" style="height: 48px; margin-right: 1em;">
       <a href="index.html" class="active">Etusivu</a>
       <a href="tietosuojaseloste.html">Tietosuoja</a>
     </nav>
@@ -39,7 +41,9 @@
 </header>
 </div>
 <main>
-  <h1><strong>AMPUMASSA</strong><br> Ampumapäiväkirja netissä</h1>
+  <h1>
+  <img src="ampumassalogo.png" alt="Ampumassa logo" style="height: 512px;">
+  <br> Ampumapäiväkirja netissä</h1>
   
   <div id="login"><button id="login-btn">Kirjaudu Google-tilillä</button></div>
 <div id="intro">
@@ -49,7 +53,7 @@
   </p>
   <p>
     Tiedot tallennetaan omaan Google Driveesi, ja niitä voi tarkastella sekä PDF-muodossa että selaimessa.
-    Sovellus toimii myös mobiililaitteilla, ja oppii automaattisesti aiemmin käytetyt aseet ja paikat. Tietojasi ei kerätä sivuston hallinnoijan toimesta eikä luovuteta koskaan kolmansille osapuolille tarpeettomasti.
+    Sovellus toimii myös mobiililaitteilla, ja oppii automaattisesti aiemmin käytetyt aseet ja paikat. Tietojasi ei kerätä sivuston hallinnoijan toimesta eikä luovuteta koskaan kolmansille osapuolille.
   </p>
 </div>
 	<form id="log-form" style="display:none">
