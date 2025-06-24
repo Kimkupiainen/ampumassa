@@ -3,21 +3,21 @@
 <html lang="fi">
 <head>
 <link rel="icon" href="ampumassalogo.png">
-<script>
-  const ua = navigator.userAgent || '';
-  const isLikelyWebView = (
-    ua.includes('FBAN') || ua.includes('FBAV') ||       // Facebook, Instagram
-    ua.includes('Line') ||                              // LINE
-    ua.includes('wv') ||                                // Android WebView
-    (window.navigator.standalone === false)             // iOS "web app" Safari
-  );
+<!-- <script> -->
+  <!-- const ua = navigator.userAgent || ''; -->
+  <!-- const isLikelyWebView = ( -->
+    <!-- ua.includes('FBAN') || ua.includes('FBAV') ||   // Facebook, Instagram -->
+    <!-- ua.includes('Line') ||                          // LINE -->
+    <!-- ua.includes('wv')                               // Android WebView -->
+  <!-- ); -->
 
-  if (isLikelyWebView) {
-    // Ohjataan oikeaan selaimeen
-    alert("Avaa tämä sovellus tavallisessa selaimessa (esim. Chrome tai Firefox). Sinut ohjataan nyt oikeaan näkymään.");
-    window.location.replace("https://kimkupiainen.github.io/ampumassa/index.html");
-  }
-</script>
+  <!-- const isIOSStandalone = window.navigator.standalone === false; -->
+
+  <!-- if (isLikelyWebView || isIOSStandalone) { -->
+    <!-- alert("Avaa tämä sovellus tavallisessa selaimessa (esim. Chrome tai Firefox). WebView tai upotettu selain saattaa estää kirjautumisen tai tietojen tallennuksen."); -->
+    <!-- // ÄLÄ tee location.replace automaattisesti – käyttäjä voi avata manuaalisesti -->
+  <!-- } -->
+<!-- </script> -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ampumapäiväkirja</title>
@@ -33,7 +33,6 @@
 	<div class="brand"></div>
 	<button class="menu-toggle" aria-label="Valikko">☰</button>
     <nav class="nav-links">
-	  <img src="ampumassalogo.png" alt="Ampumassa logo" style="height: 48px; margin-right: 1em;">
       <a href="index.html" class="active">Etusivu</a>
       <a href="tietosuojaseloste.html">Tietosuoja</a>
     </nav>
