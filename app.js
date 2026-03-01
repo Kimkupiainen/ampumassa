@@ -696,7 +696,7 @@
       const data = await apiFetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
       );
-      const rows = data.values;
+      const rows = data.values || [];
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -743,6 +743,7 @@
       doc.save("ampumapaivakirja.pdf");
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
+        console.error('PDF export error:', err);
         showStatus('PDF-vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
       }
     }
@@ -753,7 +754,7 @@
       const data = await apiFetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
       );
-      const rows = data.values;
+      const rows = data.values || [];
 
       const now = new Date();
       const twoYearsAgo = new Date();
@@ -822,6 +823,7 @@
       doc.save("pistooliraportti_2v.pdf");
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
+        console.error('Pistol report export error:', err);
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
       }
     }
@@ -854,7 +856,7 @@
       const data = await apiFetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
       );
-      const rows = data.values;
+      const rows = data.values || [];
 
       const now = new Date();
       const twelveMonthsAgo = new Date();
@@ -888,9 +890,9 @@
 
         if (y > 250) { doc.addPage(); y = 20; }
 
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text(`${weaponType} – käyntejä: ${sectionRows.length} | laukauksia: ${totalRounds}`, 10, y);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('helvetica', 'normal');
         y += 8;
 
         if (sectionRows.length === 0) {
@@ -935,6 +937,7 @@
       doc.save(`uusintaraportti_${safeWeapons}_${selectedTTs.join('-').toLowerCase()}_12kk.pdf`);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
+        console.error('Renewal report export error:', err);
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
       }
     }
