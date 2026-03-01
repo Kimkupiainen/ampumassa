@@ -1,142 +1,126 @@
-
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-<link rel="icon" href="ampumassalogo.png">
-<!-- <script> -->
-  <!-- const ua = navigator.userAgent || ''; -->
-  <!-- const isLikelyWebView = ( -->
-    <!-- ua.includes('FBAN') || ua.includes('FBAV') ||   // Facebook, Instagram -->
-    <!-- ua.includes('Line') ||                          // LINE -->
-    <!-- ua.includes('wv')                               // Android WebView -->
-  <!-- ); -->
-
-  <!-- const isIOSStandalone = window.navigator.standalone === false; -->
-
-  <!-- if (isLikelyWebView || isIOSStandalone) { -->
-    <!-- alert("Avaa tämä sovellus tavallisessa selaimessa (esim. Chrome tai Firefox). WebView tai upotettu selain saattaa estää kirjautumisen tai tietojen tallennuksen."); -->
-    <!-- // ÄLÄ tee location.replace automaattisesti – käyttäjä voi avata manuaalisesti -->
-  <!-- } -->
-<!-- </script> -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ampumapäiväkirja</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="icon" href="ampumassalogo.png">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-</script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="dark">
-<div>
+
 <header class="site-header">
   <div class="nav-container">
-	<div class="brand"></div>
-	<button class="menu-toggle" aria-label="Valikko">☰</button>
+    <div class="brand"></div>
+    <button class="menu-toggle" aria-label="Valikko">☰</button>
     <nav class="nav-links">
       <a href="index.html" class="active">Etusivu</a>
       <a href="tietosuojaseloste.html">Tietosuoja</a>
     </nav>
   </div>
 </header>
-</div>
+
 <main>
   <h1>
-  <img src="ampumassalogo.png" alt="Ampumassa logo" style="height: 512px;">
-  <br> Ampumapäiväkirja netissä</h1>
-  
-  <div id="login"><button id="login-btn">Kirjaudu Google-tilillä</button></div>
-<div id="intro">
-  <p>
-    <strong>AMPUMASSA</strong> on henkilökohtainen työkalu ammuntojen seurantaan.
-    Kirjaa ylös päivämäärä, ase, laukausmäärät, paikka ja vapaamuotoiset huomiot jokaiselta ampumakerralta.
-  </p>
-  <p>
-    Tiedot tallennetaan omaan Google Driveesi, ja niitä voi tarkastella sekä PDF-muodossa että selaimessa.
-    Sovellus toimii myös mobiililaitteilla, ja oppii automaattisesti aiemmin käytetyt aseet ja paikat. Tietojasi ei kerätä sivuston hallinnoijan toimesta eikä luovuteta koskaan kolmansille osapuolille.
-  </p>
-</div>
-	<form id="log-form" style="display:none">
-	  <input type="date" id="date" required>
-	  <input type="text" id="event" placeholder="Tapahtuma" required>
+    <img src="ampumassalogo.png" alt="Ampumassa logo" class="logo-img">
+    <br>Ampumapäiväkirja netissä
+  </h1>
 
-	  <select id="type" required>
-		<option value="">Valitse asetyyppi</option>
-		<option value="Pistooli">Pistooli</option>
-		<option value="Kivääri">Kivääri</option>
-		<option value="Haulikko">Haulikko</option>
-		<option value="Pienoiskivääri">Pienoiskivääri</option>
-		<option value="Muu">Muu</option>
-	  </select>
+  <div id="login">
+    <button id="login-btn">Kirjaudu Google-tilillä</button>
+  </div>
 
-	  <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
-	  <datalist id="calibers"></datalist>
+  <div id="intro">
+    <p>
+      <strong>AMPUMASSA</strong> on henkilökohtainen työkalu ammuntojen seurantaan.
+      Kirjaa ylös päivämäärä, ase, laukausmäärät, paikka ja vapaamuotoiset huomiot jokaiselta ampumakerralta.
+    </p>
+    <p>
+      Tiedot tallennetaan omaan Google Driveesi, ja niitä voi tarkastella sekä PDF-muodossa että selaimessa.
+      Sovellus toimii myös mobiililaitteilla, ja oppii automaattisesti aiemmin käytetyt aseet ja paikat.
+      Tietojasi ei kerätä sivuston hallinnoijan toimesta eikä luovuteta koskaan kolmansille osapuolille.
+    </p>
+  </div>
 
-	  <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
-	  <datalist id="weapons"></datalist>
+  <form id="log-form" style="display:none">
+    <input type="date" id="date" required>
+    <input type="text" id="event" placeholder="Tapahtuma" required>
 
-	  <select id="tt" required>
-		<option value="">Valitse toimintatapa</option>
-		<option value="TT1">TT1 – kertatuli ilman lipasta</option>
-		<option value="TT2">TT2 – kertatuli lippaalla</option>
-		<option value="TT3">TT3 – itselataava kertatuli</option>
-		<option value="TT4">TT4 – sarjatuli</option>
-	  </select>
+    <select id="type" required>
+      <option value="">Valitse asetyyppi</option>
+      <option value="Pistooli">Pistooli</option>
+      <option value="Kivääri">Kivääri</option>
+      <option value="Haulikko">Haulikko</option>
+      <option value="Pienoiskivääri">Pienoiskivääri</option>
+      <option value="Muu">Muu</option>
+    </select>
 
-	  <input list="locations" id="location" placeholder="Paikka" required>
-	  <datalist id="locations"></datalist>
+    <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
+    <datalist id="calibers"></datalist>
 
-	  <input type="number" id="rounds" placeholder="Laukaukset" required>
-	  <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
+    <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
+    <datalist id="weapons"></datalist>
 
-	  <div>
-		<button type="submit" class="save">Tallenna merkintä</button>
-		<button type="button" onclick="cancelEdit()">Peru muokkaus</button>
-	  </div>
-	  <div id="status"></div>
-	</form>
+    <select id="tt" required>
+      <option value="">Valitse toimintatapa</option>
+      <option value="TT1">TT1 – kertatuli ilman lipasta</option>
+      <option value="TT2">TT2 – kertatuli lippaalla</option>
+      <option value="TT3">TT3 – itselataava kertatuli</option>
+      <option value="TT4">TT4 – sarjatuli</option>
+    </select>
 
+    <input list="locations" id="location" placeholder="Paikka" required>
+    <datalist id="locations"></datalist>
 
-	<div id="entries">
-	  <div>
-		<button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
-		<style>
-  #export-pdf,
-  #export-pistol-report {
-    display: none;
-  }
-</style>
-		<button id="export-pdf" class="pdf-button">🎯 Lataa ampumahistoriasi PDF:nä</button>
-		<button id="export-pistol-report" class="pdf-button">🔫 Pistooliraportti (2v)</button>
-	  </div>
-	  <div id="entry-cards"></div> <!-- <- tämä lisättiin -->
-	</div>
-	  <!-- Loader -->
-	<div id="loader" style="display: none;">
-	  <div class="spinner"></div>
-	</div>
-<!-- Popup confirmation -->
-	<!-- Popup confirmation -->
-	<div id="confirmation-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" style="display:none;">
-	  <div class="modal-content">
-		<h3 id="modal-title">Merkintä lisätty</h3>
-		<div id="popup-details"></div>
-		<button id="close-modal">OK</button>
-	  </div>
-	</div>
+    <input type="number" id="rounds" placeholder="Laukaukset" required>
+    <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
 
-<script src="app.js" defer></script>
+    <div class="form-actions">
+      <button type="submit">Tallenna merkintä</button>
+      <button type="button" onclick="cancelEdit()">Peru muokkaus</button>
+    </div>
+    <div id="status"></div>
+  </form>
+
+  <div id="entries">
+    <button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
+    <button id="export-pdf" class="pdf-button">🎯 Lataa ampumahistoriasi PDF:nä</button>
+    <button id="export-pistol-report" class="pdf-button">🔫 Pistooliraportti (2v)</button>
+    <div id="entry-cards"></div>
+  </div>
+
+  <div id="loader">
+    <div class="spinner"></div>
+  </div>
+
+  <div id="confirmation-modal" class="modal" role="dialog" aria-modal="true"
+       aria-labelledby="modal-title" style="display:none;">
+    <div class="modal-content">
+      <h3 id="modal-title">Merkintä lisätty</h3>
+      <div id="popup-details"></div>
+      <button id="close-modal">OK</button>
+    </div>
+  </div>
 </main>
+
 <footer id="app-footer">
   © 2025 Kim Kupiainen – Kaikki oikeudet pidätetään.
-<br><button class="donation-button" onclick="window.open('https://qr.mobilepay.fi/box/844a12a5-3cd7-46da-a256-1d6954215f5f/pay-in', '_blank')">
-  ☕ Droppaa kahvirahaa
-</button>
+  <br>
+  <button class="donation-button"
+          onclick="window.open('https://qr.mobilepay.fi/box/844a12a5-3cd7-46da-a256-1d6954215f5f/pay-in', '_blank')">
+    ☕ Droppaa kahvirahaa
+  </button>
 </footer>
+
 <div id="global-loader" style="display:none;">
   <div class="global-loader-content">
     <div class="spinner"></div>
     <p>Haetaan merkintöjä...</p>
   </div>
 </div>
+
+<script src="app.js" defer></script>
 </body>
 </html>
