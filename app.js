@@ -327,6 +327,10 @@
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
           populateDatalist("calibers", "calibers");
+          // Auto-fill today's date and load entries + stats on login
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('date').value = today;
+          loadEntries();
         } catch (err) {
           if (err.message !== 'TOKEN_EXPIRED') {
             showStatus('Kirjautuminen epäonnistui. Yritä uudelleen.', true);
@@ -400,7 +404,9 @@
 
         showConfirmation(row.map(c => c.userEnteredValue?.stringValue ?? c.userEnteredValue?.numberValue ?? ''));
         document.getElementById('log-form').reset();
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
         showStatus('Merkintä tallennettu.');
+        loadEntries();
       } catch (err) {
         if (err.message !== 'TOKEN_EXPIRED') {
           showStatus('Tallennus epäonnistui. Tarkista verkkoyhteytesi ja yritä uudelleen.', true);
@@ -417,10 +423,30 @@
           `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
         );
 
-        const rowsWithIndex = (data.values || []).slice(1).map((row, i) => ({
-          data: row,
-          rowIndex: i + 1  // row 0 is the header
-        }));
+        const allRows = (data.values || []).slice(1);
+        const rowsWithIndex = allRows.map((row, i) => ({ data: row, rowIndex: i + 1 }));
+
+        // ── Stats ───────────────────────────────────────────────────
+        const now = new Date();
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearRows = allRows.filter(r => new Date(r[0]) >= yearStart);
+        const yearRounds = yearRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
+        const ttCounts = {};
+        yearRows.forEach(r => { const tt = r[5] || 'Muu'; ttCounts[tt] = (ttCounts[tt] || 0) + 1; });
+        const ttSummary = Object.entries(ttCounts)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([tt, n]) => `${tt}: ${n}`)
+          .join(' · ');
+        const statsBar = document.getElementById('stats-bar');
+        statsBar.style.display = 'block';
+        statsBar.innerHTML = `
+          <div class="stats-main">
+            <span class="stats-year">${now.getFullYear()}</span>
+            <span class="stats-num">${yearRows.length}</span><span class="stats-label">käyntiä</span>
+            <span class="stats-num">${yearRounds.toLocaleString('fi-FI')}</span><span class="stats-label">laukausta</span>
+          </div>
+          ${ttSummary ? `<div class="stats-tt">${ttSummary}</div>` : ''}
+        `;
 
         // Newest first
         rowsWithIndex.sort((a, b) => new Date(b.data[0]) - new Date(a.data[0]));
