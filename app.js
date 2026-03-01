@@ -827,7 +827,22 @@
     }
   };
 
-  document.getElementById('export-rifle-report').onclick = async () => {
+  document.getElementById('export-rifle-report').onclick = () => {
+    document.getElementById('rifle-filter-modal').style.display = 'flex';
+  };
+
+  document.getElementById('rifle-filter-cancel').onclick = () => {
+    document.getElementById('rifle-filter-modal').style.display = 'none';
+  };
+
+  document.getElementById('rifle-filter-ok').onclick = async () => {
+    const selectedTTs = [...document.querySelectorAll('input[name="rifle-tt"]:checked')].map(cb => cb.value);
+    if (selectedTTs.length === 0) {
+      showStatus('Valitse vähintään yksi toimintatapa.', true);
+      return;
+    }
+    document.getElementById('rifle-filter-modal').style.display = 'none';
+
     try {
       const data = await apiFetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
@@ -844,27 +859,31 @@
       let y = 20;
 
       const formatDate = (d) => d.toISOString().split("T")[0];
+      const ttLabel = selectedTTs.join(', ');
 
       doc.setFontSize(16);
-      doc.text("Kivääririaportti TT3 – 12 kk", 10, 15);
+      doc.text(`Kivääririaportti (${ttLabel}) – 12 kk`, 10, 15);
       doc.setFontSize(10);
       doc.text(`Ajanjakso: ${formatDate(twelveMonthsAgo)} – ${formatDate(now)}`, 10, y);
       y += 7;
 
       // r[2] = Asetyyppi, r[5] = Toimintatapa
-      const inPeriod = r => { const d = new Date(r[0]); return !isNaN(d) && d >= twelveMonthsAgo && r[5] === 'TT3'; };
-      const rifleRows    = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'kivääri');
+      const inPeriod = r => {
+        const d = new Date(r[0]);
+        return !isNaN(d) && d >= twelveMonthsAgo && selectedTTs.includes(r[5]);
+      };
+      const rifleRows     = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'kivääri');
       const smallboreRows = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'pienoiskivääri');
       const sumRounds = arr => arr.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
 
       const printSection = (sectionRows, label) => {
         doc.setFont(undefined, 'bold');
-        doc.text(`${label} (TT3) – käyntejä: ${sectionRows.length} | laukauksia: ${sumRounds(sectionRows)}`, 10, y);
+        doc.text(`${label} (${ttLabel}) – käyntejä: ${sectionRows.length} | laukauksia: ${sumRounds(sectionRows)}`, 10, y);
         doc.setFont(undefined, 'normal');
         y += 8;
 
         if (sectionRows.length === 0) {
-          doc.text(`Ei ${label.toLowerCase()}-TT3-merkintöjä viimeisen 12 kuukauden ajalta.`, 10, y);
+          doc.text(`Ei ${label.toLowerCase()}-merkintöjä valituilla toimintatavoilla viimeisen 12 kk ajalta.`, 10, y);
           y += 7;
           return;
         }
@@ -903,7 +922,7 @@
       y += 5;
       printSection(smallboreRows, 'Pienoiskivääri');
 
-      doc.save("kivaariraportti_tt3_12kk.pdf");
+      doc.save(`kivaariraportti_${selectedTTs.join('-').toLowerCase()}_12kk.pdf`);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
