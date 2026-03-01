@@ -852,58 +852,56 @@
       y += 7;
 
       // r[2] = Asetyyppi, r[5] = Toimintatapa
-      const rifleRows = rows.slice(1).filter(r => {
-        const date = new Date(r[0]);
-        const type = r[2]?.toLowerCase() || '';
-        return !isNaN(date) && date >= twelveMonthsAgo
-          && (type === 'kivääri' || type === 'pienoiskivääri')
-          && r[5] === 'TT3';
-      });
+      const inPeriod = r => { const d = new Date(r[0]); return !isNaN(d) && d >= twelveMonthsAgo && r[5] === 'TT3'; };
+      const rifleRows    = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'kivääri');
+      const smallboreRows = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'pienoiskivääri');
+      const sumRounds = arr => arr.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
 
-      let totalRounds = 0;
-      rifleRows.forEach(r => { totalRounds += parseInt(r[7]) || 0; });
+      const printSection = (sectionRows, label) => {
+        doc.setFont(undefined, 'bold');
+        doc.text(`${label} (TT3) – käyntejä: ${sectionRows.length} | laukauksia: ${sumRounds(sectionRows)}`, 10, y);
+        doc.setFont(undefined, 'normal');
+        y += 8;
 
-      doc.text(`Käyntejä: ${rifleRows.length}`, 10, y);
+        if (sectionRows.length === 0) {
+          doc.text(`Ei ${label.toLowerCase()}-TT3-merkintöjä viimeisen 12 kuukauden ajalta.`, 10, y);
+          y += 7;
+          return;
+        }
+
+        sectionRows.forEach(r => {
+          const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
+
+          const block = [
+            `${date} — ${event}`,
+            `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
+            `Huomiot: ${notes || "-"}`
+          ];
+
+          for (let line of block) {
+            const split = doc.splitTextToSize(line, 180);
+            doc.text(split, 10, y);
+            y += split.length * lineHeight;
+          }
+
+          if (signature) {
+            if (y + 30 > 270) { doc.addPage(); y = 20; }
+            doc.setFontSize(8);
+            doc.text('Allekirjoitus:', 10, y);
+            y += 4;
+            doc.setFontSize(10);
+            try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+            y += 25;
+          }
+
+          y += 5;
+          if (y > 270) { doc.addPage(); y = 20; }
+        });
+      };
+
+      printSection(rifleRows, 'Kivääri');
       y += 5;
-      doc.text(`Laukauksia yhteensä: ${totalRounds}`, 10, y);
-      y += 10;
-
-      if (rifleRows.length === 0) {
-        doc.text('Ei kivääri/pienoiskivääri-TT3-merkintöjä viimeisen 12 kuukauden ajalta.', 10, y);
-      }
-
-      rifleRows.forEach(r => {
-        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
-
-        const block = [
-          `${date} — ${event}`,
-          `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
-          `Huomiot: ${notes || "-"}`
-        ];
-
-        for (let line of block) {
-          const split = doc.splitTextToSize(line, 180);
-          doc.text(split, 10, y);
-          y += split.length * lineHeight;
-        }
-
-        if (signature) {
-          if (y + 30 > 270) { doc.addPage(); y = 20; }
-          doc.setFontSize(8);
-          doc.text('Allekirjoitus:', 10, y);
-          y += 4;
-          doc.setFontSize(10);
-          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
-          y += 25;
-        }
-
-        y += 5;
-
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-      });
+      printSection(smallboreRows, 'Pienoiskivääri');
 
       doc.save("kivaariraportti_tt3_12kk.pdf");
     } catch (err) {
