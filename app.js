@@ -836,11 +836,11 @@
   };
 
   document.getElementById('renewal-ok').onclick = async () => {
-    const weaponRadio = document.querySelector('input[name="renewal-weapon"]:checked');
-    const selectedTTs = [...document.querySelectorAll('input[name="renewal-tt"]:checked')].map(cb => cb.value);
+    const selectedWeapons = [...document.querySelectorAll('input[name="renewal-weapon"]:checked')].map(cb => cb.value);
+    const selectedTTs    = [...document.querySelectorAll('input[name="renewal-tt"]:checked')].map(cb => cb.value);
 
-    if (!weaponRadio) {
-      showStatus('Valitse asetyyppi.', true);
+    if (selectedWeapons.length === 0) {
+      showStatus('Valitse vähintään yksi asetyyppi.', true);
       return;
     }
     if (selectedTTs.length === 0) {
@@ -848,7 +848,6 @@
       return;
     }
 
-    const weaponType = weaponRadio.value;
     document.getElementById('renewal-modal').style.display = 'none';
 
     try {
@@ -867,64 +866,73 @@
       let y = 20;
 
       const formatDate = (d) => d.toISOString().split("T")[0];
-      const ttLabel = selectedTTs.join(', ');
+      const ttLabel     = selectedTTs.join(', ');
+      const weaponLabel = selectedWeapons.join(', ');
 
       doc.setFontSize(16);
-      doc.text(`Uusintaraportti – ${weaponType} (${ttLabel}) – 12 kk`, 10, 15);
+      doc.text(`Uusintaraportti – 12 kk`, 10, 15);
       doc.setFontSize(10);
-      doc.text(`Ajanjakso: ${formatDate(twelveMonthsAgo)} – ${formatDate(now)}`, 10, y);
-      y += 7;
+      doc.text(`Ajanjakso: ${formatDate(twelveMonthsAgo)} – ${formatDate(now)}`, 10, y); y += 5;
+      doc.text(`Asetyypit: ${weaponLabel}`, 10, y); y += 5;
+      doc.text(`Toimintatavat: ${ttLabel}`, 10, y); y += 10;
 
-      // r[2] = Asetyyppi, r[5] = Toimintatapa
-      const matchingRows = rows.slice(1).filter(r => {
-        const d = new Date(r[0]);
-        return !isNaN(d) && d >= twelveMonthsAgo
-          && r[2]?.toLowerCase() === weaponType.toLowerCase()
-          && selectedTTs.includes(r[5]);
-      });
+      // One section per selected weapon type
+      selectedWeapons.forEach(weaponType => {
+        const sectionRows = rows.slice(1).filter(r => {
+          const d = new Date(r[0]);
+          return !isNaN(d) && d >= twelveMonthsAgo
+            && r[2]?.toLowerCase() === weaponType.toLowerCase()
+            && selectedTTs.includes(r[5]);
+        });
+        const totalRounds = sectionRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
 
-      const totalRounds = matchingRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
+        if (y > 250) { doc.addPage(); y = 20; }
 
-      doc.setFont(undefined, 'bold');
-      doc.text(`${weaponType} (${ttLabel}) – käyntejä: ${matchingRows.length} | laukauksia: ${totalRounds}`, 10, y);
-      doc.setFont(undefined, 'normal');
-      y += 8;
+        doc.setFont(undefined, 'bold');
+        doc.text(`${weaponType} – käyntejä: ${sectionRows.length} | laukauksia: ${totalRounds}`, 10, y);
+        doc.setFont(undefined, 'normal');
+        y += 8;
 
-      if (matchingRows.length === 0) {
-        doc.text(`Ei merkintöjä valituilla suodattimilla viimeisen 12 kk ajalta.`, 10, y);
-      }
-
-      matchingRows.forEach(r => {
-        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
-
-        const block = [
-          `${date} — ${event}`,
-          `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
-          `Huomiot: ${notes || "-"}`
-        ];
-
-        for (let line of block) {
-          const split = doc.splitTextToSize(line, 180);
-          doc.text(split, 10, y);
-          y += split.length * lineHeight;
+        if (sectionRows.length === 0) {
+          doc.text('Ei merkintöjä valituilla suodattimilla viimeisen 12 kk ajalta.', 10, y);
+          y += 7;
+          return;
         }
 
-        if (signature) {
-          if (y + 30 > 270) { doc.addPage(); y = 20; }
-          doc.setFontSize(8);
-          doc.text('Allekirjoitus:', 10, y);
-          y += 4;
-          doc.setFontSize(10);
-          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
-          y += 25;
-        }
+        sectionRows.forEach(r => {
+          const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
 
-        y += 5;
-        if (y > 270) { doc.addPage(); y = 20; }
+          const block = [
+            `${date} — ${event}`,
+            `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
+            `Huomiot: ${notes || "-"}`
+          ];
+
+          for (let line of block) {
+            const split = doc.splitTextToSize(line, 180);
+            doc.text(split, 10, y);
+            y += split.length * lineHeight;
+          }
+
+          if (signature) {
+            if (y + 30 > 270) { doc.addPage(); y = 20; }
+            doc.setFontSize(8);
+            doc.text('Allekirjoitus:', 10, y);
+            y += 4;
+            doc.setFontSize(10);
+            try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+            y += 25;
+          }
+
+          y += 5;
+          if (y > 270) { doc.addPage(); y = 20; }
+        });
+
+        y += 5; // gap between sections
       });
 
-      const safeWeapon = weaponType.toLowerCase().replace(/\s+/g, '_');
-      doc.save(`uusintaraportti_${safeWeapon}_${selectedTTs.join('-').toLowerCase()}_12kk.pdf`);
+      const safeWeapons = selectedWeapons.map(w => w.toLowerCase().replace(/\s+/g, '_')).join('-');
+      doc.save(`uusintaraportti_${safeWeapons}_${selectedTTs.join('-').toLowerCase()}_12kk.pdf`);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);

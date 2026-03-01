@@ -125,7 +125,7 @@ body:not(.dark) #intro {
 #intro p:last-child  { margin-bottom: 0; }
 
 /* ── Form inputs ───────────────────────────────────────────────────── */
-input,
+input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
   font-size: 1rem;
@@ -142,7 +142,7 @@ textarea {
   min-height: 48px;
 }
 
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary);
