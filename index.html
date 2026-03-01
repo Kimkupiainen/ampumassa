@@ -103,6 +103,20 @@
       <button id="close-modal">OK</button>
     </div>
   </div>
+
+  <div id="signature-modal" class="modal" style="display:none;" role="dialog"
+       aria-modal="true" aria-labelledby="sig-modal-title">
+    <div class="modal-content">
+      <h3 id="sig-modal-title">Kouluttajan allekirjoitus</h3>
+      <p class="sig-instruction">Pyydä kouluttajaa allekirjoittamaan alla olevaan kenttään.</p>
+      <canvas id="signature-canvas" width="260" height="100"></canvas>
+      <div class="sig-actions">
+        <button type="button" id="sig-clear">Tyhjennä</button>
+        <button type="button" id="sig-cancel">Peruuta</button>
+        <button type="button" id="sig-save">Tallenna</button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <footer id="app-footer">

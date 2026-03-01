@@ -6,6 +6,7 @@
   let accessToken = null;
   let spreadsheetId = null;
   let editingRow = null;
+  let signingRowIndex = null;
   let tokenClient;
 
   function toggleDarkMode() {
@@ -175,7 +176,8 @@
                 { userEnteredValue: { stringValue: 'Toimintatapa' } },
                 { userEnteredValue: { stringValue: 'Paikka' } },
                 { userEnteredValue: { stringValue: 'Laukaukset' } },
-                { userEnteredValue: { stringValue: 'Kuvaus' } }
+                { userEnteredValue: { stringValue: 'Kuvaus' } },
+                { userEnteredValue: { stringValue: 'Allekirjoitus' } }
               ]
             }]
           }]
@@ -275,7 +277,7 @@
     });
   }
 
-  // Helper that builds the edit/delete action buttons for a card.
+  // Helper that builds the edit/delete/sign action buttons for a card.
   // Kept as a function so they can be recreated if a failed delete needs to be undone.
   function createCardActions(rowIndex, cardElement) {
     const actions = document.createElement('div');
@@ -292,6 +294,12 @@
     deleteBtn.textContent = 'Poista';
     deleteBtn.onclick = () => deleteRow(rowIndex, cardElement);
     actions.appendChild(deleteBtn);
+
+    const signBtn = document.createElement('button');
+    signBtn.className = 'sign';
+    signBtn.textContent = '✍ Allekirjoita';
+    signBtn.onclick = () => openSignatureModal(rowIndex, cardElement);
+    actions.appendChild(signBtn);
 
     return actions;
   }
@@ -452,6 +460,21 @@
             card.appendChild(notes);
           }
 
+          if (r[9]) {
+            const sigDisplay = document.createElement('div');
+            sigDisplay.className = 'sig-display';
+            const badge = document.createElement('span');
+            badge.className = 'signed-badge';
+            badge.textContent = '✍ Allekirjoitettu';
+            sigDisplay.appendChild(badge);
+            const sigImg = document.createElement('img');
+            sigImg.src = r[9];
+            sigImg.className = 'sig-image';
+            sigImg.alt = 'Allekirjoitus';
+            sigDisplay.appendChild(sigImg);
+            card.appendChild(sigDisplay);
+          }
+
           card.appendChild(createCardActions(rowIndex, card));
           container.appendChild(card);
         });
@@ -465,6 +488,108 @@
     };
 
     document.getElementById('load-entries').onclick = loadEntries;
+
+    // ── Signature modal ──────────────────────────────────────────────
+    const sigModal = document.getElementById('signature-modal');
+    const sigCanvas = document.getElementById('signature-canvas');
+    const sigCtx = sigCanvas.getContext('2d');
+    let isDrawing = false;
+
+    function clearSigCanvas() {
+      sigCtx.fillStyle = '#fff';
+      sigCtx.fillRect(0, 0, sigCanvas.width, sigCanvas.height);
+      sigCtx.strokeStyle = '#1a1a1a';
+      sigCtx.lineWidth = 2;
+      sigCtx.lineCap = 'round';
+      sigCtx.lineJoin = 'round';
+    }
+
+    function getSigPos(e) {
+      const rect = sigCanvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return {
+        x: (src.clientX - rect.left) * (sigCanvas.width / rect.width),
+        y: (src.clientY - rect.top) * (sigCanvas.height / rect.height)
+      };
+    }
+
+    sigCanvas.addEventListener('mousedown', e => {
+      isDrawing = true;
+      sigCtx.beginPath();
+      const p = getSigPos(e);
+      sigCtx.moveTo(p.x, p.y);
+    });
+    sigCanvas.addEventListener('mousemove', e => {
+      if (!isDrawing) return;
+      const p = getSigPos(e);
+      sigCtx.lineTo(p.x, p.y);
+      sigCtx.stroke();
+    });
+    sigCanvas.addEventListener('mouseup', () => { isDrawing = false; });
+    sigCanvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+    sigCanvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      isDrawing = true;
+      sigCtx.beginPath();
+      const p = getSigPos(e);
+      sigCtx.moveTo(p.x, p.y);
+    }, { passive: false });
+    sigCanvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const p = getSigPos(e);
+      sigCtx.lineTo(p.x, p.y);
+      sigCtx.stroke();
+    }, { passive: false });
+    sigCanvas.addEventListener('touchend', () => { isDrawing = false; });
+
+    window.openSignatureModal = function(rowIndex) {
+      signingRowIndex = rowIndex;
+      clearSigCanvas();
+      sigModal.style.display = 'flex';
+    };
+
+    document.getElementById('sig-clear').onclick = clearSigCanvas;
+
+    document.getElementById('sig-cancel').onclick = () => {
+      sigModal.style.display = 'none';
+      signingRowIndex = null;
+    };
+
+    document.getElementById('sig-save').onclick = async () => {
+      const dataUrl = sigCanvas.toDataURL('image/png');
+      sigModal.style.display = 'none';
+      showLoader();
+      try {
+        const sheetId = await getSheetIdByTitle(SHEET_TAB);
+        if (!sheetId) { showStatus('Taulukkoa ei löytynyt.', true); return; }
+
+        await apiFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requests: [{
+              updateCells: {
+                start: { sheetId, rowIndex: signingRowIndex, columnIndex: 9 },
+                rows: [{ values: [{ userEnteredValue: { stringValue: dataUrl } }] }],
+                fields: 'userEnteredValue'
+              }
+            }]
+          })
+        });
+
+        showStatus('Allekirjoitus tallennettu.');
+        loadEntries();
+      } catch (err) {
+        if (err.message !== 'TOKEN_EXPIRED') {
+          showStatus('Allekirjoituksen tallennus epäonnistui.', true);
+        }
+      } finally {
+        hideLoader();
+        signingRowIndex = null;
+      }
+    };
   };
 
   window.editRow = async (index) => {
@@ -555,7 +680,7 @@
       doc.setFontSize(10);
 
       for (let i = 1; i < rows.length; i++) {
-        const [date, event, type, caliber, weapon, tt, location, rounds, notes = ""] = rows[i];
+        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = rows[i];
 
         const block = [
           `${date} — ${event}`,
@@ -567,6 +692,16 @@
           const split = doc.splitTextToSize(line, 180);
           doc.text(split, 10, y);
           y += split.length * lineHeight;
+        }
+
+        if (signature) {
+          if (y + 30 > 270) { doc.addPage(); y = 20; }
+          doc.setFontSize(8);
+          doc.text('Allekirjoitus:', 10, y);
+          y += 4;
+          doc.setFontSize(10);
+          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+          y += 25;
         }
 
         y += 5;
@@ -624,7 +759,7 @@
       y += 10;
 
       pistolRows.forEach(r => {
-        const [date, event, type, caliber, weapon, tt, location, rounds, notes = ""] = r;
+        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
 
         const block = [
           `${date} — ${event}`,
@@ -636,6 +771,16 @@
           const split = doc.splitTextToSize(line, 180);
           doc.text(split, 10, y);
           y += split.length * lineHeight;
+        }
+
+        if (signature) {
+          if (y + 30 > 270) { doc.addPage(); y = 20; }
+          doc.setFontSize(8);
+          doc.text('Allekirjoitus:', 10, y);
+          y += 4;
+          doc.setFontSize(10);
+          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+          y += 25;
         }
 
         y += 5;
