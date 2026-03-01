@@ -597,6 +597,29 @@ body.dark .modal-content {
   background: #e67600;
 }
 
+/* ── Rifle filter modal ─────────────────────────────────────────────── */
+.tt-check {
+  display: block;
+  margin: 0.35rem 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.rifle-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.rifle-filter-actions button {
+  flex: 1;
+  margin-top: 0;
+}
+
+#rifle-filter-cancel {
+  background: #666 !important;
+}
+
 /* ── Signature canvas (inside modal) ───────────────────────────────── */
 #signature-canvas {
   display: block;
