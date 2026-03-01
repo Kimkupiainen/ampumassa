@@ -854,8 +854,9 @@
       // r[2] = Asetyyppi, r[5] = Toimintatapa
       const rifleRows = rows.slice(1).filter(r => {
         const date = new Date(r[0]);
+        const type = r[2]?.toLowerCase() || '';
         return !isNaN(date) && date >= twelveMonthsAgo
-          && r[2]?.toLowerCase() === 'kivääri'
+          && (type === 'kivääri' || type === 'pienoiskivääri')
           && r[5] === 'TT3';
       });
 
@@ -868,7 +869,7 @@
       y += 10;
 
       if (rifleRows.length === 0) {
-        doc.text('Ei kivääri-TT3-merkintöjä viimeisen 12 kuukauden ajalta.', 10, y);
+        doc.text('Ei kivääri/pienoiskivääri-TT3-merkintöjä viimeisen 12 kuukauden ajalta.', 10, y);
       }
 
       rifleRows.forEach(r => {
