@@ -9,7 +9,9 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          integrity="sha512-z4PhNX7vuL3xVChQ1m2AB9Yg5AULVxXcg/SpIdNs6c5H0NE8XYXysP+DGNKHfuwvY7kxvUdBeoGlODJ6+SfaPg=="
+          crossorigin="anonymous"></script>
 </head>
 <body class="dark">
 
@@ -92,7 +94,7 @@
     <button id="load-entries" style="display:none">📋 Päivitä merkinnät</button>
     <button id="export-pdf" class="pdf-button">🎯 Lataa ampumahistoriasi PDF:nä</button>
     <button id="export-pistol-report" class="pdf-button">🔫 Pistooliraportti (2v)</button>
-    <button id="export-rifle-report" class="pdf-button">🎿 Kivääririaportti TT3 (12kk)</button>
+    <button id="export-renewal-report" class="pdf-button">📋 Uusintaraportti (12kk)</button>
     <div id="entry-cards"></div>
   </div>
 
@@ -109,18 +111,27 @@
     </div>
   </div>
 
-  <div id="rifle-filter-modal" class="modal" style="display:none;" role="dialog"
-       aria-modal="true" aria-labelledby="rifle-filter-title">
+  <div id="renewal-modal" class="modal" style="display:none;" role="dialog"
+       aria-modal="true" aria-labelledby="renewal-modal-title">
     <div class="modal-content">
-      <h3 id="rifle-filter-title">Kivääririaportin suodatus</h3>
-      <p style="margin-bottom:0.75rem">Valitse mukaan otettavat toimintatavat:</p>
-      <label class="tt-check"><input type="checkbox" name="rifle-tt" value="TT1"> TT1</label>
-      <label class="tt-check"><input type="checkbox" name="rifle-tt" value="TT2"> TT2</label>
-      <label class="tt-check"><input type="checkbox" name="rifle-tt" value="TT3" checked> TT3</label>
-      <label class="tt-check"><input type="checkbox" name="rifle-tt" value="TT4"> TT4</label>
+      <h3 id="renewal-modal-title">Uusintaraportti – 12 kk</h3>
+
+      <p class="renewal-section-label">Asetyyppi</p>
+      <label class="tt-check"><input type="radio" name="renewal-weapon" value="Pistooli"> Pistooli</label>
+      <label class="tt-check"><input type="radio" name="renewal-weapon" value="Kivääri"> Kivääri</label>
+      <label class="tt-check"><input type="radio" name="renewal-weapon" value="Pienoiskivääri"> Pienoiskivääri</label>
+      <label class="tt-check"><input type="radio" name="renewal-weapon" value="Haulikko"> Haulikko</label>
+      <label class="tt-check"><input type="radio" name="renewal-weapon" value="Muu"> Muu</label>
+
+      <p class="renewal-section-label" style="margin-top:1rem">Toimintatavat</p>
+      <label class="tt-check"><input type="checkbox" name="renewal-tt" value="TT1"> TT1</label>
+      <label class="tt-check"><input type="checkbox" name="renewal-tt" value="TT2"> TT2</label>
+      <label class="tt-check"><input type="checkbox" name="renewal-tt" value="TT3"> TT3</label>
+      <label class="tt-check"><input type="checkbox" name="renewal-tt" value="TT4"> TT4</label>
+
       <div class="rifle-filter-actions">
-        <button type="button" id="rifle-filter-cancel">Peruuta</button>
-        <button type="button" id="rifle-filter-ok">Luo raportti</button>
+        <button type="button" id="renewal-cancel">Peruuta</button>
+        <button type="button" id="renewal-ok">Luo raportti</button>
       </div>
     </div>
   </div>

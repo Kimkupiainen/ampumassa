@@ -597,7 +597,16 @@ body.dark .modal-content {
   background: #e67600;
 }
 
-/* ── Rifle filter modal ─────────────────────────────────────────────── */
+/* ── Renewal / filter modal ─────────────────────────────────────────── */
+.renewal-section-label {
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+}
+
 .tt-check {
   display: block;
   margin: 0.35rem 0;

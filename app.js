@@ -79,7 +79,7 @@
     document.getElementById('load-entries').style.display = 'none';
     document.getElementById('export-pdf').style.display = 'none';
     document.getElementById('export-pistol-report').style.display = 'none';
-    document.getElementById('export-rifle-report').style.display = 'none';
+    document.getElementById('export-renewal-report').style.display = 'none';
     document.getElementById('login-btn').style.display = 'inline';
     document.getElementById('login').innerHTML = '<p>Istunto vanhentunut. Kirjaudu uudelleen.</p>';
     hideLoader();
@@ -324,7 +324,7 @@
           document.getElementById('load-entries').style.display = 'inline';
           document.getElementById('export-pdf').style.display = 'inline';
           document.getElementById('export-pistol-report').style.display = 'inline';
-          document.getElementById('export-rifle-report').style.display = 'inline';
+          document.getElementById('export-renewal-report').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
@@ -437,7 +437,7 @@
         yearRows.forEach(r => { const tt = r[5] || 'Muu'; ttCounts[tt] = (ttCounts[tt] || 0) + 1; });
         const ttSummary = Object.entries(ttCounts)
           .sort((a, b) => a[0].localeCompare(b[0]))
-          .map(([tt, n]) => `${tt}: ${n}`)
+          .map(([tt, n]) => `${escapeHTML(tt)}: ${n}`)
           .join(' · ');
         const statsBar = document.getElementById('stats-bar');
         statsBar.style.display = 'block';
@@ -827,21 +827,29 @@
     }
   };
 
-  document.getElementById('export-rifle-report').onclick = () => {
-    document.getElementById('rifle-filter-modal').style.display = 'flex';
+  document.getElementById('export-renewal-report').onclick = () => {
+    document.getElementById('renewal-modal').style.display = 'flex';
   };
 
-  document.getElementById('rifle-filter-cancel').onclick = () => {
-    document.getElementById('rifle-filter-modal').style.display = 'none';
+  document.getElementById('renewal-cancel').onclick = () => {
+    document.getElementById('renewal-modal').style.display = 'none';
   };
 
-  document.getElementById('rifle-filter-ok').onclick = async () => {
-    const selectedTTs = [...document.querySelectorAll('input[name="rifle-tt"]:checked')].map(cb => cb.value);
+  document.getElementById('renewal-ok').onclick = async () => {
+    const weaponRadio = document.querySelector('input[name="renewal-weapon"]:checked');
+    const selectedTTs = [...document.querySelectorAll('input[name="renewal-tt"]:checked')].map(cb => cb.value);
+
+    if (!weaponRadio) {
+      showStatus('Valitse asetyyppi.', true);
+      return;
+    }
     if (selectedTTs.length === 0) {
       showStatus('Valitse vähintään yksi toimintatapa.', true);
       return;
     }
-    document.getElementById('rifle-filter-modal').style.display = 'none';
+
+    const weaponType = weaponRadio.value;
+    document.getElementById('renewal-modal').style.display = 'none';
 
     try {
       const data = await apiFetch(
@@ -862,67 +870,61 @@
       const ttLabel = selectedTTs.join(', ');
 
       doc.setFontSize(16);
-      doc.text(`Kivääririaportti (${ttLabel}) – 12 kk`, 10, 15);
+      doc.text(`Uusintaraportti – ${weaponType} (${ttLabel}) – 12 kk`, 10, 15);
       doc.setFontSize(10);
       doc.text(`Ajanjakso: ${formatDate(twelveMonthsAgo)} – ${formatDate(now)}`, 10, y);
       y += 7;
 
       // r[2] = Asetyyppi, r[5] = Toimintatapa
-      const inPeriod = r => {
+      const matchingRows = rows.slice(1).filter(r => {
         const d = new Date(r[0]);
-        return !isNaN(d) && d >= twelveMonthsAgo && selectedTTs.includes(r[5]);
-      };
-      const rifleRows     = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'kivääri');
-      const smallboreRows = rows.slice(1).filter(r => inPeriod(r) && r[2]?.toLowerCase() === 'pienoiskivääri');
-      const sumRounds = arr => arr.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
+        return !isNaN(d) && d >= twelveMonthsAgo
+          && r[2]?.toLowerCase() === weaponType.toLowerCase()
+          && selectedTTs.includes(r[5]);
+      });
 
-      const printSection = (sectionRows, label) => {
-        doc.setFont(undefined, 'bold');
-        doc.text(`${label} (${ttLabel}) – käyntejä: ${sectionRows.length} | laukauksia: ${sumRounds(sectionRows)}`, 10, y);
-        doc.setFont(undefined, 'normal');
-        y += 8;
+      const totalRounds = matchingRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
 
-        if (sectionRows.length === 0) {
-          doc.text(`Ei ${label.toLowerCase()}-merkintöjä valituilla toimintatavoilla viimeisen 12 kk ajalta.`, 10, y);
-          y += 7;
-          return;
+      doc.setFont(undefined, 'bold');
+      doc.text(`${weaponType} (${ttLabel}) – käyntejä: ${matchingRows.length} | laukauksia: ${totalRounds}`, 10, y);
+      doc.setFont(undefined, 'normal');
+      y += 8;
+
+      if (matchingRows.length === 0) {
+        doc.text(`Ei merkintöjä valituilla suodattimilla viimeisen 12 kk ajalta.`, 10, y);
+      }
+
+      matchingRows.forEach(r => {
+        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
+
+        const block = [
+          `${date} — ${event}`,
+          `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
+          `Huomiot: ${notes || "-"}`
+        ];
+
+        for (let line of block) {
+          const split = doc.splitTextToSize(line, 180);
+          doc.text(split, 10, y);
+          y += split.length * lineHeight;
         }
 
-        sectionRows.forEach(r => {
-          const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
+        if (signature) {
+          if (y + 30 > 270) { doc.addPage(); y = 20; }
+          doc.setFontSize(8);
+          doc.text('Allekirjoitus:', 10, y);
+          y += 4;
+          doc.setFontSize(10);
+          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+          y += 25;
+        }
 
-          const block = [
-            `${date} — ${event}`,
-            `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
-            `Huomiot: ${notes || "-"}`
-          ];
+        y += 5;
+        if (y > 270) { doc.addPage(); y = 20; }
+      });
 
-          for (let line of block) {
-            const split = doc.splitTextToSize(line, 180);
-            doc.text(split, 10, y);
-            y += split.length * lineHeight;
-          }
-
-          if (signature) {
-            if (y + 30 > 270) { doc.addPage(); y = 20; }
-            doc.setFontSize(8);
-            doc.text('Allekirjoitus:', 10, y);
-            y += 4;
-            doc.setFontSize(10);
-            try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
-            y += 25;
-          }
-
-          y += 5;
-          if (y > 270) { doc.addPage(); y = 20; }
-        });
-      };
-
-      printSection(rifleRows, 'Kivääri');
-      y += 5;
-      printSection(smallboreRows, 'Pienoiskivääri');
-
-      doc.save(`kivaariraportti_${selectedTTs.join('-').toLowerCase()}_12kk.pdf`);
+      const safeWeapon = weaponType.toLowerCase().replace(/\s+/g, '_');
+      doc.save(`uusintaraportti_${safeWeapon}_${selectedTTs.join('-').toLowerCase()}_12kk.pdf`);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
