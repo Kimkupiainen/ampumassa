@@ -94,6 +94,7 @@
     <button id="export-pdf" class="pdf-button" style="display:none">🎯 Lataa ampumahistoriasi PDF:nä</button>
     <button id="export-pistol-report" class="pdf-button" style="display:none">🔫 Pistooliraportti (2v)</button>
     <button id="export-renewal-report" class="pdf-button" style="display:none">📋 Uusintaraportti (12kk)</button>
+    <button id="export-custom-report" class="pdf-button" style="display:none">📅 Oma raportti</button>
     <div id="entry-cards"></div>
   </div>
 
@@ -130,6 +131,37 @@
       <div class="rifle-filter-actions">
         <button type="button" id="renewal-cancel">Peruuta</button>
         <button type="button" id="renewal-ok">Luo raportti</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="custom-modal" class="modal" style="display:none;" role="dialog"
+       aria-modal="true" aria-labelledby="custom-modal-title">
+    <div class="modal-content">
+      <h3 id="custom-modal-title">Oma raportti</h3>
+
+      <p class="renewal-section-label">Aikaväli</p>
+      <div class="custom-date-row">
+        <label>Alkaen <input type="date" id="custom-date-from"></label>
+        <label>Saakka <input type="date" id="custom-date-to"></label>
+      </div>
+
+      <p class="renewal-section-label" style="margin-top:1rem">Asetyyppi</p>
+      <label class="tt-check"><input type="checkbox" name="custom-weapon" value="Pistooli"> Pistooli</label>
+      <label class="tt-check"><input type="checkbox" name="custom-weapon" value="Kivääri"> Kivääri</label>
+      <label class="tt-check"><input type="checkbox" name="custom-weapon" value="Pienoiskivääri"> Pienoiskivääri</label>
+      <label class="tt-check"><input type="checkbox" name="custom-weapon" value="Haulikko"> Haulikko</label>
+      <label class="tt-check"><input type="checkbox" name="custom-weapon" value="Muu"> Muu</label>
+
+      <p class="renewal-section-label" style="margin-top:1rem">Toimintatavat</p>
+      <label class="tt-check"><input type="checkbox" name="custom-tt" value="TT1"> TT1</label>
+      <label class="tt-check"><input type="checkbox" name="custom-tt" value="TT2"> TT2</label>
+      <label class="tt-check"><input type="checkbox" name="custom-tt" value="TT3"> TT3</label>
+      <label class="tt-check"><input type="checkbox" name="custom-tt" value="TT4"> TT4</label>
+
+      <div class="rifle-filter-actions">
+        <button type="button" id="custom-cancel">Peruuta</button>
+        <button type="button" id="custom-ok">Luo raportti</button>
       </div>
     </div>
   </div>
