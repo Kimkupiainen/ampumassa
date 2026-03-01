@@ -79,6 +79,7 @@
     document.getElementById('load-entries').style.display = 'none';
     document.getElementById('export-pdf').style.display = 'none';
     document.getElementById('export-pistol-report').style.display = 'none';
+    document.getElementById('export-rifle-report').style.display = 'none';
     document.getElementById('login-btn').style.display = 'inline';
     document.getElementById('login').innerHTML = '<p>Istunto vanhentunut. Kirjaudu uudelleen.</p>';
     hideLoader();
@@ -323,6 +324,7 @@
           document.getElementById('load-entries').style.display = 'inline';
           document.getElementById('export-pdf').style.display = 'inline';
           document.getElementById('export-pistol-report').style.display = 'inline';
+          document.getElementById('export-rifle-report').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
@@ -818,6 +820,91 @@
       });
 
       doc.save("pistooliraportti_2v.pdf");
+    } catch (err) {
+      if (err.message !== 'TOKEN_EXPIRED') {
+        showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
+      }
+    }
+  };
+
+  document.getElementById('export-rifle-report').onclick = async () => {
+    try {
+      const data = await apiFetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
+      );
+      const rows = data.values;
+
+      const now = new Date();
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(now.getFullYear() - 1);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const lineHeight = 5.5;
+      let y = 20;
+
+      const formatDate = (d) => d.toISOString().split("T")[0];
+
+      doc.setFontSize(16);
+      doc.text("Kivääririaportti TT3 – 12 kk", 10, 15);
+      doc.setFontSize(10);
+      doc.text(`Ajanjakso: ${formatDate(twelveMonthsAgo)} – ${formatDate(now)}`, 10, y);
+      y += 7;
+
+      // r[2] = Asetyyppi, r[5] = Toimintatapa
+      const rifleRows = rows.slice(1).filter(r => {
+        const date = new Date(r[0]);
+        return !isNaN(date) && date >= twelveMonthsAgo
+          && r[2]?.toLowerCase() === 'kivääri'
+          && r[5] === 'TT3';
+      });
+
+      let totalRounds = 0;
+      rifleRows.forEach(r => { totalRounds += parseInt(r[7]) || 0; });
+
+      doc.text(`Käyntejä: ${rifleRows.length}`, 10, y);
+      y += 5;
+      doc.text(`Laukauksia yhteensä: ${totalRounds}`, 10, y);
+      y += 10;
+
+      if (rifleRows.length === 0) {
+        doc.text('Ei kivääri-TT3-merkintöjä viimeisen 12 kuukauden ajalta.', 10, y);
+      }
+
+      rifleRows.forEach(r => {
+        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
+
+        const block = [
+          `${date} — ${event}`,
+          `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
+          `Huomiot: ${notes || "-"}`
+        ];
+
+        for (let line of block) {
+          const split = doc.splitTextToSize(line, 180);
+          doc.text(split, 10, y);
+          y += split.length * lineHeight;
+        }
+
+        if (signature) {
+          if (y + 30 > 270) { doc.addPage(); y = 20; }
+          doc.setFontSize(8);
+          doc.text('Allekirjoitus:', 10, y);
+          y += 4;
+          doc.setFontSize(10);
+          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+          y += 25;
+        }
+
+        y += 5;
+
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      doc.save("kivaariraportti_tt3_12kk.pdf");
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);

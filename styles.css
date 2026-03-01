@@ -220,7 +220,8 @@ form button[type="button"]:hover {
 
 /* ── PDF export buttons ─────────────────────────────────────────────── */
 #export-pdf,
-#export-pistol-report {
+#export-pistol-report,
+#export-rifle-report {
   /* Visibility is controlled by JS; hidden by default */
   display: none;
 }
