@@ -80,6 +80,7 @@
     document.getElementById('export-pdf').style.display = 'none';
     document.getElementById('export-pistol-report').style.display = 'none';
     document.getElementById('export-renewal-report').style.display = 'none';
+    document.getElementById('export-custom-report').style.display = 'none';
     document.getElementById('login-btn').style.display = 'inline';
     document.getElementById('login').innerHTML = '<p>Istunto vanhentunut. Kirjaudu uudelleen.</p>';
     hideLoader();
@@ -325,6 +326,7 @@
           document.getElementById('export-pdf').style.display = 'inline';
           document.getElementById('export-pistol-report').style.display = 'inline';
           document.getElementById('export-renewal-report').style.display = 'inline';
+          document.getElementById('export-custom-report').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
@@ -939,6 +941,130 @@
       if (err.message !== 'TOKEN_EXPIRED') {
         console.error('Renewal report export error:', err);
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
+      }
+    }
+  };
+
+  document.getElementById('export-custom-report').onclick = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const yearAgo = new Date();
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+    document.getElementById('custom-date-from').value = yearAgo.toISOString().split('T')[0];
+    document.getElementById('custom-date-to').value = today;
+    document.getElementById('custom-modal').style.display = 'flex';
+  };
+
+  document.getElementById('custom-cancel').onclick = () => {
+    document.getElementById('custom-modal').style.display = 'none';
+  };
+
+  document.getElementById('custom-ok').onclick = async () => {
+    const dateFrom = document.getElementById('custom-date-from').value;
+    const dateTo   = document.getElementById('custom-date-to').value;
+    const selectedWeapons = [...document.querySelectorAll('input[name="custom-weapon"]:checked')].map(cb => cb.value);
+    const selectedTTs     = [...document.querySelectorAll('input[name="custom-tt"]:checked')].map(cb => cb.value);
+
+    if (!dateFrom || !dateTo) {
+      showStatus('Valitse aikaväli.', true);
+      return;
+    }
+    if (new Date(dateFrom) > new Date(dateTo)) {
+      showStatus('Alkupäivä ei voi olla loppupäivän jälkeen.', true);
+      return;
+    }
+    if (selectedWeapons.length === 0) {
+      showStatus('Valitse vähintään yksi asetyyppi.', true);
+      return;
+    }
+    if (selectedTTs.length === 0) {
+      showStatus('Valitse vähintään yksi toimintatapa.', true);
+      return;
+    }
+
+    document.getElementById('custom-modal').style.display = 'none';
+
+    try {
+      const data = await apiFetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
+      );
+      const rows = data.values || [];
+
+      const from = new Date(dateFrom);
+      const to   = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const lineHeight = 5.5;
+      let y = 20;
+
+      doc.setFontSize(16);
+      doc.text('Oma raportti', 10, 15);
+      doc.setFontSize(10);
+      doc.text(`Ajanjakso: ${dateFrom} \u2013 ${dateTo}`, 10, y); y += 5;
+      doc.text(`Asetyypit: ${selectedWeapons.join(', ')}`, 10, y); y += 5;
+      doc.text(`Toimintatavat: ${selectedTTs.join(', ')}`, 10, y); y += 10;
+
+      selectedWeapons.forEach(weaponType => {
+        const sectionRows = rows.slice(1).filter(r => {
+          const d = new Date(r[0]);
+          return !isNaN(d) && d >= from && d <= to
+            && r[2]?.toLowerCase() === weaponType.toLowerCase()
+            && selectedTTs.includes(r[5]);
+        });
+        const totalRounds = sectionRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
+
+        if (y > 250) { doc.addPage(); y = 20; }
+
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${weaponType} \u2013 k\u00e4yntej\u00e4: ${sectionRows.length} | laukauksia: ${totalRounds}`, 10, y);
+        doc.setFont('helvetica', 'normal');
+        y += 8;
+
+        if (sectionRows.length === 0) {
+          doc.text('Ei merkint\u00f6j\u00e4 valituilla suodattimilla.', 10, y);
+          y += 7;
+          return;
+        }
+
+        sectionRows.forEach(r => {
+          const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
+
+          const block = [
+            `${date} \u2014 ${event}`,
+            `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
+            `Huomiot: ${notes || "-"}`
+          ];
+
+          for (let line of block) {
+            const split = doc.splitTextToSize(line, 180);
+            doc.text(split, 10, y);
+            y += split.length * lineHeight;
+          }
+
+          if (signature) {
+            if (y + 30 > 270) { doc.addPage(); y = 20; }
+            doc.setFontSize(8);
+            doc.text('Allekirjoitus:', 10, y);
+            y += 4;
+            doc.setFontSize(10);
+            try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+            y += 25;
+          }
+
+          y += 5;
+          if (y > 270) { doc.addPage(); y = 20; }
+        });
+
+        y += 5;
+      });
+
+      const safeWeapons = selectedWeapons.map(w => w.toLowerCase().replace(/\s+/g, '_')).join('-');
+      doc.save(`oma_raportti_${dateFrom}_${dateTo}_${safeWeapons}.pdf`);
+    } catch (err) {
+      if (err.message !== 'TOKEN_EXPIRED') {
+        console.error('Custom report export error:', err);
+        showStatus('Raportin vienti ep\u00e4onnistui. Tarkista verkkoyhteytesi.', true);
       }
     }
   };
