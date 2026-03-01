@@ -79,6 +79,7 @@
     document.getElementById('load-entries').style.display = 'none';
     document.getElementById('export-pdf').style.display = 'none';
     document.getElementById('export-pistol-report').style.display = 'none';
+    document.getElementById('export-rifle-report').style.display = 'none';
     document.getElementById('login-btn').style.display = 'inline';
     document.getElementById('login').innerHTML = '<p>Istunto vanhentunut. Kirjaudu uudelleen.</p>';
     hideLoader();
@@ -323,10 +324,15 @@
           document.getElementById('load-entries').style.display = 'inline';
           document.getElementById('export-pdf').style.display = 'inline';
           document.getElementById('export-pistol-report').style.display = 'inline';
+          document.getElementById('export-rifle-report').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
           populateDatalist("calibers", "calibers");
+          // Auto-fill today's date and load entries + stats on login
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('date').value = today;
+          loadEntries();
         } catch (err) {
           if (err.message !== 'TOKEN_EXPIRED') {
             showStatus('Kirjautuminen epäonnistui. Yritä uudelleen.', true);
@@ -400,7 +406,9 @@
 
         showConfirmation(row.map(c => c.userEnteredValue?.stringValue ?? c.userEnteredValue?.numberValue ?? ''));
         document.getElementById('log-form').reset();
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
         showStatus('Merkintä tallennettu.');
+        loadEntries();
       } catch (err) {
         if (err.message !== 'TOKEN_EXPIRED') {
           showStatus('Tallennus epäonnistui. Tarkista verkkoyhteytesi ja yritä uudelleen.', true);
@@ -417,10 +425,30 @@
           `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
         );
 
-        const rowsWithIndex = (data.values || []).slice(1).map((row, i) => ({
-          data: row,
-          rowIndex: i + 1  // row 0 is the header
-        }));
+        const allRows = (data.values || []).slice(1);
+        const rowsWithIndex = allRows.map((row, i) => ({ data: row, rowIndex: i + 1 }));
+
+        // ── Stats ───────────────────────────────────────────────────
+        const now = new Date();
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearRows = allRows.filter(r => new Date(r[0]) >= yearStart);
+        const yearRounds = yearRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
+        const ttCounts = {};
+        yearRows.forEach(r => { const tt = r[5] || 'Muu'; ttCounts[tt] = (ttCounts[tt] || 0) + 1; });
+        const ttSummary = Object.entries(ttCounts)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([tt, n]) => `${tt}: ${n}`)
+          .join(' · ');
+        const statsBar = document.getElementById('stats-bar');
+        statsBar.style.display = 'block';
+        statsBar.innerHTML = `
+          <div class="stats-main">
+            <span class="stats-year">${now.getFullYear()}</span>
+            <span class="stats-num">${yearRows.length}</span><span class="stats-label">käyntiä</span>
+            <span class="stats-num">${yearRounds.toLocaleString('fi-FI')}</span><span class="stats-label">laukausta</span>
+          </div>
+          ${ttSummary ? `<div class="stats-tt">${ttSummary}</div>` : ''}
+        `;
 
         // Newest first
         rowsWithIndex.sort((a, b) => new Date(b.data[0]) - new Date(a.data[0]));
@@ -792,6 +820,92 @@
       });
 
       doc.save("pistooliraportti_2v.pdf");
+    } catch (err) {
+      if (err.message !== 'TOKEN_EXPIRED') {
+        showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);
+      }
+    }
+  };
+
+  document.getElementById('export-rifle-report').onclick = async () => {
+    try {
+      const data = await apiFetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}`
+      );
+      const rows = data.values;
+
+      const now = new Date();
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(now.getFullYear() - 1);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const lineHeight = 5.5;
+      let y = 20;
+
+      const formatDate = (d) => d.toISOString().split("T")[0];
+
+      doc.setFontSize(16);
+      doc.text("Kivääririaportti TT3 – 12 kk", 10, 15);
+      doc.setFontSize(10);
+      doc.text(`Ajanjakso: ${formatDate(twelveMonthsAgo)} – ${formatDate(now)}`, 10, y);
+      y += 7;
+
+      // r[2] = Asetyyppi, r[5] = Toimintatapa
+      const rifleRows = rows.slice(1).filter(r => {
+        const date = new Date(r[0]);
+        const type = r[2]?.toLowerCase() || '';
+        return !isNaN(date) && date >= twelveMonthsAgo
+          && (type === 'kivääri' || type === 'pienoiskivääri')
+          && r[5] === 'TT3';
+      });
+
+      let totalRounds = 0;
+      rifleRows.forEach(r => { totalRounds += parseInt(r[7]) || 0; });
+
+      doc.text(`Käyntejä: ${rifleRows.length}`, 10, y);
+      y += 5;
+      doc.text(`Laukauksia yhteensä: ${totalRounds}`, 10, y);
+      y += 10;
+
+      if (rifleRows.length === 0) {
+        doc.text('Ei kivääri/pienoiskivääri-TT3-merkintöjä viimeisen 12 kuukauden ajalta.', 10, y);
+      }
+
+      rifleRows.forEach(r => {
+        const [date, event, type, caliber, weapon, tt, location, rounds, notes = "", signature = ""] = r;
+
+        const block = [
+          `${date} — ${event}`,
+          `${weapon} (${type}, ${caliber}, ${tt}) @ ${location} | ${rounds} laukausta`,
+          `Huomiot: ${notes || "-"}`
+        ];
+
+        for (let line of block) {
+          const split = doc.splitTextToSize(line, 180);
+          doc.text(split, 10, y);
+          y += split.length * lineHeight;
+        }
+
+        if (signature) {
+          if (y + 30 > 270) { doc.addPage(); y = 20; }
+          doc.setFontSize(8);
+          doc.text('Allekirjoitus:', 10, y);
+          y += 4;
+          doc.setFontSize(10);
+          try { doc.addImage(signature, 'PNG', 10, y, 70, 22); } catch (e) { /* skip */ }
+          y += 25;
+        }
+
+        y += 5;
+
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      doc.save("kivaariraportti_tt3_12kk.pdf");
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         showStatus('Raportin vienti epäonnistui. Tarkista verkkoyhteytesi.', true);

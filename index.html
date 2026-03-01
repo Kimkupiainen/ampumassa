@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ff8800">
   <title>Ampumapäiväkirja</title>
   <link rel="icon" href="ampumassalogo.png">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -84,10 +86,13 @@
     <div id="status"></div>
   </form>
 
+  <div id="stats-bar" style="display:none"></div>
+
   <div id="entries">
-    <button id="load-entries" style="display:none">📋 Näytä merkinnät</button>
+    <button id="load-entries" style="display:none">📋 Päivitä merkinnät</button>
     <button id="export-pdf" class="pdf-button">🎯 Lataa ampumahistoriasi PDF:nä</button>
     <button id="export-pistol-report" class="pdf-button">🔫 Pistooliraportti (2v)</button>
+    <button id="export-rifle-report" class="pdf-button">🎿 Kivääririaportti TT3 (12kk)</button>
     <div id="entry-cards"></div>
   </div>
 
