@@ -1245,8 +1245,10 @@
     const ENTRY_HDR = /^(\d+)\.\s+(\d{2}\.\d{2}\.\d{4})\s+-\s+(?:Suomi,\s*)?(.+)$/;
 
     // Full performance line — all fields on one line:
-    // "N. Discipline (SessionType) WeaponType - TTN (running) Model, Caliber N laukausta"
-    const PERF_LINE = /^(\d+)\.\s+(.+?)\s+\((.+?)\)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)\s+\(\d+\)\s+(.+?),\s*([^\s,]+)\s+(\d+)\s+laukausta/i;
+    // "N. Discipline (SessionType) WeaponType - TTN [(running)] Model, Caliber N laukausta"
+    // When the TT running total reaches 10+ digits it wraps to the next line in the PDF,
+    // so the (?:\s*\(\d+\))? group is optional.
+    const PERF_LINE = /^(\d+)\.\s+(.+?)\s+\((.+?)\)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)(?:\s*\(\d+\))?\s+(.+?),\s*([^\s,]+)\s+(\d+)\s+laukausta/i;
 
     // Lines to skip (page headers, user-info box, verification text, metadata)
     const SKIP = /^(Tulostettu|Tulostemallin versio|Ampuma\s+[-\u2013]\s+s\u00e4hk\u00f6inen|K\u00e4ytt\u00e4j\u00e4tietojen versio|Merkinn\u00e4n tiiviste|P\u00e4iv\u00e4kirjamerkint\u00e4 lis\u00e4tty|Ampuma\.com|K\u00e4ytt\u00e4j\u00e4n tiedot|K\u00e4ytt\u00e4j\u00e4n unikki|Voit |Etunimi|Sukunimi|Tulosteen tunniste|Ampuman k\u00e4ytt\u00f6|T\u00e4m\u00e4 ampuma|Ne sis\u00e4lt\u00e4v\u00e4t|P\u00e4iv\u00e4kirjamerkinn\u00e4t on|Suorituksissa|Suorituksen laukausten|Ampuman avulla|Suoritukset jakautuivat|K\u00e4ytt\u00e4j\u00e4tunnus|K\u00e4ytt\u00e4j\u00e4tietojen nykyinen|allekirjoitettu digitaalisesti|\d+\s*\(\d+\))/i;
