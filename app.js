@@ -60,9 +60,7 @@
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = reject;
+      s.src = src; s.onload = resolve; s.onerror = reject;
       document.head.appendChild(s);
     });
   }
@@ -1081,7 +1079,7 @@
     }
   };
 
-  // ── Ampuma.com PDF import ──────────────────────────────────────────
+  // ── Ampuma.com PDF import ─────────────────────────────────────────────────
 
   document.getElementById('import-pdf').onclick = () => {
     document.getElementById('import-pdf-input').click();
@@ -1089,12 +1087,11 @@
 
   document.getElementById('import-pdf-input').onchange = async (e) => {
     const file = e.target.files[0];
-    e.target.value = ''; // reset so same file can be re-selected
+    e.target.value = '';
     if (!file) return;
 
     showLoader();
     try {
-      // Lazy-load pdf.js from CDN on first use
       if (!window.pdfjsLib) {
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
         window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -1102,25 +1099,32 @@
       }
 
       const text = await extractAmpumaPDFText(file);
+      // Log extracted text so we can debug if the parser fails
+      console.log('[Ampuma import] raw extracted text:\n' + text.slice(0, 4000));
+
       const rows = parseAmpumaPDFText(text);
 
       if (rows.length === 0) {
-        showStatus('PDF:stä ei löytynyt merkintöjä. Onko kyseessä Ampuma.com-tuloste?', true);
+        showStatus(
+          'PDF:st\u00e4 ei l\u00f6ytynyt merkint\u00f6j\u00e4. ' +
+          'Avaa selaimen kehitysty\u00f6kalut (F12 \u2192 Console) n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.',
+          true
+        );
         return;
       }
 
       const totalRounds = rows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
-      const sample = rows[0];
+      const s = rows[0];
       document.getElementById('import-preview').innerHTML =
-        `<p>L\u00f6ydettiin <strong>${rows.length} suoritusta</strong> yhteens\u00e4 <strong>${totalRounds} laukauksella</strong>.</p>` +
-        `<p style="font-size:0.85rem;opacity:0.75">Esimerkki: ${escapeHTML(sample[0])} \u2013 ${escapeHTML(sample[1])}, ${escapeHTML(sample[2])}, ${escapeHTML(sample[6])}</p>` +
-        `<p style="font-size:0.85rem;opacity:0.75">Huom: allekirjoituskuvat eiv\u00e4t siirry, mutta ammunnanjohtajan nimi tallennetaan kuvaus-kentt\u00e4\u00e4n.</p>`;
+        '<p>L\u00f6ydettiin <strong>' + rows.length + ' suoritusta</strong> yhteens\u00e4 <strong>' + totalRounds + ' laukauksella</strong>.</p>' +
+        '<p style="font-size:0.85rem;opacity:0.75">Esimerkki: ' + escapeHTML(s[0]) + ' \u2013 ' + escapeHTML(s[1]) + ', ' + escapeHTML(s[2]) + ', ' + escapeHTML(s[6]) + '</p>' +
+        '<p style="font-size:0.85rem;opacity:0.75">Huom: allekirjoituskuvat eiv\u00e4t siirry; ammunnanjohtajan nimi tallennetaan kuvaus-kentt\u00e4\u00e4n.</p>';
 
       window._pendingImportRows = rows;
       document.getElementById('import-modal').style.display = 'flex';
     } catch (err) {
       console.error('PDF import error:', err);
-      showStatus('PDF:n lukeminen ep\u00e4onnistui. Tarkista tiedosto.', true);
+      showStatus('PDF:n lukeminen ep\u00e4onnistui: ' + err.message, true);
     } finally {
       hideLoader();
     }
@@ -1142,18 +1146,16 @@
       const sheetId = await getSheetIdByTitle(SHEET_TAB);
       if (!sheetId) throw new Error('Sheet tab not found');
 
-      // Find first empty row
       const countData = await apiFetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A:A`
+        'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId + '/values/' + SHEET_TAB + '!A:A'
       );
       const startRow = countData.values?.length ?? 1;
 
-      // Write in chunks of 50 to stay well within API limits
       const CHUNK = 50;
       for (let i = 0; i < rows.length; i += CHUNK) {
         const chunk = rows.slice(i, i + CHUNK);
         await apiFetch(
-          `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+          'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId + ':batchUpdate',
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1172,141 +1174,137 @@
         );
       }
 
-      showStatus(`Tuotu ${rows.length} merkint\u00e4\u00e4 onnistuneesti!`);
+      showStatus('Tuotu ' + rows.length + ' merkint\u00e4\u00e4 onnistuneesti!');
       loadEntries();
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         console.error('Import write error:', err);
-        showStatus('Merkint\u00f6jen kirjoitus ep\u00e4onnistui. Tarkista verkkoyhteytesi.', true);
+        showStatus('Merkint\u00f6jen kirjoitus ep\u00e4onnistui.', true);
       }
     } finally {
       hideLoader();
     }
   };
 
+  // Extract text from PDF using pdf.js, grouping items by y-coordinate with a
+  // tolerance to handle slight baseline variations within a visual line.
   async function extractAmpumaPDFText(file) {
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    const pages = [];
+    const allLines = [];
 
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const content = await page.getTextContent();
 
-      // Group text items by rounded y-coordinate to reconstruct visual lines
-      const byY = new Map();
+      // Group items whose y-coordinates are within 4px of each other
+      const groups = [];
       for (const item of content.items) {
-        const y = Math.round(item.transform[5]);
-        if (!byY.has(y)) byY.set(y, []);
-        byY.get(y).push({ x: item.transform[4], str: item.str });
+        const str = item.str;
+        if (!str || !str.trim()) continue;
+        const y = item.transform[5];
+        const x = item.transform[4];
+        let placed = false;
+        for (const g of groups) {
+          if (Math.abs(y - g.y) <= 4) {
+            g.items.push({ x, str });
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) groups.push({ y, items: [{ x, str }] });
       }
 
-      // Sort lines top-to-bottom (higher y = higher on page in PDF coords)
-      const lines = [...byY.keys()]
-        .sort((a, b) => b - a)
-        .map(y =>
-          byY.get(y)
-            .sort((a, b) => a.x - b.x)
-            .map(i => i.str)
-            .join(' ')
-            .trim()
-        )
-        .filter(l => l.length > 0);
-
-      pages.push(lines.join('\n'));
+      // PDF y=0 is bottom, so sort descending = top-to-bottom reading order
+      groups.sort((a, b) => b.y - a.y);
+      for (const g of groups) {
+        g.items.sort((a, b) => a.x - b.x);
+        const line = g.items.map(i => i.str).join(' ').trim();
+        if (line) allLines.push(line);
+      }
     }
-    return pages.join('\n');
+
+    return allLines.join('\n');
   }
 
-  function parseAmpumaPDFText(text) {
+  // Parse text extracted from an Ampuma.com diary PDF into rows suitable for
+  // the Google Sheet.  The PDF renders each performance as a single visual line
+  // with all fields (discipline, weapon type, TT, model, caliber, rounds)
+  // spread across columns at the same y-coordinate.
+  function parseAmpumaPDFText(rawText) {
+    // Ensure "Ammunnanjohtajan allekirjoitus" is always on its own line
+    // regardless of where pdf.js placed it relative to surrounding items.
+    const text = rawText
+      .replace(/Ammunnanjohtajan allekirjoitus/gi, '\nAmmunnanjohtajan allekirjoitus\n')
+      .replace(/\n{2,}/g, '\n');
+
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     const rows  = [];
 
+    // "N. DD.MM.YYYY - [Suomi, ]City, Location"
     const ENTRY_HDR = /^(\d+)\.\s+(\d{2}\.\d{2}\.\d{4})\s+-\s+(?:Suomi,\s*)?(.+)$/;
-    const PERF_HDR  = /^(\d+)\.\s+(.+?)\s+\((.+?)\)$/;
-    const WEAPON    = /^(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)/i;
-    const ROUNDS    = /^(\d+)\s+laukausta/;
-    const INSTR     = /^Ammunnanjohtajan allekirjoitus\s+(.+)$/;
-    const SKIP      = /^(Tulostettu|Tulostemallin versio|Ampuma\s+[-\u2013]\s+s\u00e4hk\u00f6inen|K\u00e4ytt\u00e4j\u00e4tietojen versio|Merkinn\u00e4n tiiviste|P\u00e4iv\u00e4kirjamerkint\u00e4 lis\u00e4tty|Ampuma\.com|K\u00e4ytt\u00e4j\u00e4n tiedot|Voit todentaa|Etunimi|Sukunimi|Tulosteen tunniste|Ampuman k\u00e4ytt\u00f6|T\u00e4m\u00e4 ampuma|Ne sis\u00e4lt\u00e4v\u00e4t|P\u00e4iv\u00e4kirjamerkinn\u00e4t on|Suorituksissa|Suorituksen laukausten|Ampuman avulla|Suoritukset jakautuivat|\d+\s*\(\d+\))/i;
+
+    // Full performance line — all fields on one line:
+    // "N. Discipline (SessionType) WeaponType - TTN (running) Model, Caliber N laukausta"
+    const PERF_LINE = /^(\d+)\.\s+(.+?)\s+\((.+?)\)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)\s+\(\d+\)\s+(.+?),\s*([^\s,]+)\s+(\d+)\s+laukausta/i;
+
+    // Lines to skip (page headers, user-info box, verification text, metadata)
+    const SKIP = /^(Tulostettu|Tulostemallin versio|Ampuma\s+[-\u2013]\s+s\u00e4hk\u00f6inen|K\u00e4ytt\u00e4j\u00e4tietojen versio|Merkinn\u00e4n tiiviste|P\u00e4iv\u00e4kirjamerkint\u00e4 lis\u00e4tty|Ampuma\.com|K\u00e4ytt\u00e4j\u00e4n tiedot|K\u00e4ytt\u00e4j\u00e4n unikki|Voit |Etunimi|Sukunimi|Tulosteen tunniste|Ampuman k\u00e4ytt\u00f6|T\u00e4m\u00e4 ampuma|Ne sis\u00e4lt\u00e4v\u00e4t|P\u00e4iv\u00e4kirjamerkinn\u00e4t on|Suorituksissa|Suorituksen laukausten|Ampuman avulla|Suoritukset jakautuivat|K\u00e4ytt\u00e4j\u00e4tunnus|K\u00e4ytt\u00e4j\u00e4tietojen nykyinen|allekirjoitettu digitaalisesti|\d+\s*\(\d+\))/i;
 
     let date = null, location = null;
-    let disc = null, sessType = null;
-    let weaponType = null, tt = null, model = null, caliber = null;
-    let rounds = null, instructor = null;
-    let expectModel = false;
+    let currentRow = null;
+    let expectInstructor = false;
 
     function flush() {
-      if (date && weaponType) {
-        const event = disc
-          ? (sessType ? `${disc} (${sessType})` : disc)
-          : '';
-        rows.push([
-          date,
-          event,
-          weaponType,
-          caliber  || '',
-          model    || '',
-          tt       || '',
-          location || '',
-          String(rounds || 0),
-          instructor ? `Ammunnanjohtaja: ${instructor}` : '',
-          ''
-        ]);
-      }
-      weaponType = tt = model = caliber = rounds = instructor = null;
-      expectModel = false;
+      if (currentRow) { rows.push(currentRow); currentRow = null; }
+      expectInstructor = false;
     }
 
     for (const line of lines) {
-      if (SKIP.test(line)) continue;
+      // Boilerplate: skip and reset instructor-name wait
+      if (SKIP.test(line)) { expectInstructor = false; continue; }
 
-      // Diary entry header  "N. DD.MM.YYYY - [Suomi, ]City, Location"
+      // Instructor name sits on its own line after the label + signature image
+      if (expectInstructor) {
+        if (currentRow && !line.includes(':')) currentRow[8] = 'Ammunnanjohtaja: ' + line.trim();
+        expectInstructor = false;
+        continue;
+      }
+
+      if (/^Ammunnanjohtajan allekirjoitus$/i.test(line)) {
+        expectInstructor = true;
+        continue;
+      }
+
+      // Diary entry header
       const em = line.match(ENTRY_HDR);
       if (em) {
         flush();
         const [day, month, year] = em[2].split('.');
-        date     = `${year}-${month}-${day}`;
+        date     = year + '-' + month + '-' + day;
         location = em[3].trim();
-        disc     = sessType = null;
         continue;
       }
 
-      // Performance header  "N. Discipline (SessionType)"
-      const pm = line.match(PERF_HDR);
-      if (pm && !/\d{2}\.\d{2}\.\d{4}/.test(line)) {
+      // Performance line (all data on one visual line)
+      const pm = line.match(PERF_LINE);
+      if (pm) {
         flush();
-        disc      = pm[2].trim();
-        sessType  = pm[3].trim();
-        expectModel = false;
+        const [, , disc, sessType, weaponType, tt, model, caliber, roundsStr] = pm;
+        currentRow = [
+          date        || '',
+          disc.trim() + ' (' + sessType.trim() + ')',
+          weaponType,
+          caliber.trim(),
+          model.trim(),
+          tt,
+          location    || '',
+          roundsStr,
+          '',   // notes/instructor (filled when "Ammunnanjohtajan allekirjoitus" is found)
+          ''    // signature
+        ];
         continue;
       }
-
-      // Weapon type + TT
-      const wm = line.match(WEAPON);
-      if (wm) {
-        weaponType  = wm[1];
-        tt          = wm[2];
-        expectModel = true;
-        continue;
-      }
-
-      // Weapon model + caliber (the line right after the weapon/TT line)
-      if (expectModel && !ROUNDS.test(line)) {
-        const parts = line.split(',').map(s => s.trim());
-        model    = parts[0];
-        caliber  = parts.length > 1 ? parts[parts.length - 1] : '';
-        expectModel = false;
-        continue;
-      }
-      expectModel = false;
-
-      // Rounds fired
-      const rm = line.match(ROUNDS);
-      if (rm) { rounds = parseInt(rm[1]); continue; }
-
-      // Instructor name
-      const im = line.match(INSTR);
-      if (im) { instructor = im[1].trim(); continue; }
     }
 
     flush();
