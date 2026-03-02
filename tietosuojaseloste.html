@@ -9,53 +9,108 @@
     :root {
       --primary: #ff8800;
       --text-light: #fff;
-      --bg-overlay: rgba(0, 0, 0, 0.85);
       --max-width: 720px;
     }
 
     body {
       margin: 0;
       padding: 0;
-	  padding-top: 72px; /* offset header height */
+      padding-top: 72px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-      background: url('https://t3.ftcdn.net/jpg/05/25/26/68/360_F_525266832_c6WONJC2VKfFKwzozdLkoB0M0IFwGiXG.jpg') no-repeat center center fixed;
-      background-size: cover;
+      background: #121212;
       color: var(--text-light);
     }
 
     .overlay {
-      background-color: var(--bg-overlay);
       min-height: 100vh;
-      padding: 2em 1em;
+      padding: 3em 1em 4em;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
     }
 
     .container {
       max-width: var(--max-width);
       width: 100%;
-      background: transparent;
     }
 
     h1 {
       color: var(--primary);
       font-size: 2.2rem;
       text-align: center;
-      margin-bottom: 1em;
+      margin-bottom: 0.3em;
+    }
+
+    .subtitle {
+      text-align: center;
+      opacity: 0.6;
+      font-size: 0.9rem;
+      margin-bottom: 2.5em;
+    }
+
+    .tldr {
+      background: rgba(255,136,0,0.1);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 8px 8px 0;
+      padding: 1em 1.2em;
+      margin-bottom: 2.5em;
+      font-size: 1.05rem;
+      line-height: 1.7;
     }
 
     h2 {
       color: var(--primary);
-      font-size: 1.4rem;
-      margin-top: 2em;
+      font-size: 1.25rem;
+      margin-top: 2.2em;
+      margin-bottom: 0.4em;
     }
 
     p {
-      font-size: 1.05rem;
-      line-height: 1.7;
-      margin: 0.8em 0;
+      font-size: 1rem;
+      line-height: 1.75;
+      margin: 0.7em 0;
+      opacity: 0.9;
+    }
+
+    ul {
+      padding-left: 1.4em;
+      margin: 0.5em 0;
+    }
+
+    li {
+      font-size: 1rem;
+      line-height: 1.75;
+      opacity: 0.9;
+      margin-bottom: 0.2em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+      font-size: 0.95rem;
+    }
+
+    th {
+      text-align: left;
+      color: var(--primary);
+      border-bottom: 1px solid rgba(255,136,0,0.4);
+      padding: 0.5em 0.7em;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 0.5em 0.7em;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      opacity: 0.9;
+      vertical-align: top;
+    }
+
+    code {
+      background: rgba(255,255,255,0.1);
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
     }
 
     a {
@@ -63,101 +118,87 @@
       text-decoration: underline;
     }
 
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.8rem;
-      }
-      h2 {
-        font-size: 1.2rem;
-      }
-      p {
-        font-size: 1rem;
-      }
+    .section-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      margin: 2.5em 0 0;
     }
-.site-header {
-  position: fixed;
-  top: 0;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  padding: 0.8em 1.2em;
-  z-index: 10000;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
 
-.nav-container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-}
+    .site-header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(6px);
+      padding: 0.8em 1.2em;
+      z-index: 10000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+    }
 
-.brand {
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--primary);
-}
+    .nav-container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
-.menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  color: #fff;
-  cursor: pointer;
-}
+    .brand {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--primary);
+    }
 
-.nav-links {
-  display: flex;
-  gap: 1em;
-}
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      color: #fff;
+      cursor: pointer;
+    }
 
-.nav-links a {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 1rem;
-  padding: 0.3em 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
+    .nav-links {
+      display: flex;
+      gap: 1em;
+    }
 
-.nav-links a:hover,
-.nav-links a.active {
-  color: var(--primary);
-  border-color: var(--primary);
-}
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1rem;
+      padding: 0.3em 0;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
 
-/* Mobiilitila */
-@media (max-width: 600px) {
-  .menu-toggle {
-    display: block;
-  }
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
 
-  .nav-links {
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    margin-top: 0.8em;
-    animation: fadeIn 0.3s ease;
-  }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.8rem; }
+      h2 { font-size: 1.1rem; }
+      p, li, td { font-size: 0.95rem; }
 
-  .nav-links.open {
-    display: flex;
-  }
+      .menu-toggle { display: block; }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-}
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        margin-top: 0.8em;
+      }
 
-/* Tilaa sisällölle navin alle */
-.overlay {
-  padding-top: 6em;
-}
+      .nav-links.open { display: flex; }
+
+      table { font-size: 0.85rem; }
+    }
   </style>
 </head>
 
@@ -172,30 +213,210 @@
     </nav>
   </div>
 </header>
-  <div class="overlay">
-    <div class="container">
-      <h1>Tietosuojaseloste</h1>
-      <p><strong>Ampumapäiväkirja</strong> on yksityinen verkkosovellus, joka auttaa käyttäjiä kirjaamaan ja seuraamaan omia ampumakertojaan. Sovellusta ylläpitää Kim Kupiainen.</p>
 
-      <h2>Kerättävät tiedot</h2>
-      <p>Sovellus ei tallenna mitään tietoja palvelimelle tai kolmansien osapuolien järjestelmiin. Kaikki tiedot tallennetaan käyttäjän omaan Google Driveen Google Sheets -tiedostoon käyttäjän omalla OAuth-kirjautumisella.</p>
+<div class="overlay">
+  <div class="container">
 
-      <h2>Google OAuth</h2>
-      <p>Sovellus käyttää Googlen OAuth-tunnistautumista ainoastaan, jotta käyttäjä voi päästä käsiksi omaan Sheets-tiedostoonsa. Sovellus ei käytä OAuth-tunnistautumista mihinkään muuhun eikä jaa tunnistetietoja kolmansille osapuolille.</p>
+    <h1>Tietosuojaseloste</h1>
+    <p class="subtitle">Ampumapäiväkirja &ndash; voimassa 2.3.2026 alkaen</p>
 
-      <h2>Selaimen paikallinen tallennus (localStorage)</h2>
-      <p>Joidenkin kenttien (esim. ase ja paikka) aiemmat syötteet voidaan tallentaa selaimen localStorageen käyttömukavuuden parantamiseksi. Näitä tietoja ei koskaan siirretä verkon yli.</p>
-
-      <h2>Yhteydenotot</h2>
-      <p>Mikäli sinulla on kysyttävää tietosuojasta, voit ottaa yhteyttä sähköpostitse:</p>
-      <p>kim.kupiainen[at]gmail.com</p>
-
-      <h2>Muuta</h2>
-      <p>Sovellus on avoimesti julkaistu ja toimii ilman taustapalvelimia. Käyttäjä vastaa itse tallennettujen tietojen sisällöstä ja tietoturvasta omalla Google-tilillään.</p>
+    <div class="tldr">
+      <strong>Lyhyesti:</strong> Sovelluksella ei ole omaa palvelinta eikä tietokantaa.
+      Kaikki kirjaamasi tiedot tallentuvat suoraan sinun omaan Google Drivelläsi.
+      Emme koskaan näe, tallenna tai käsittele tietojasi.
     </div>
+
+    <h2>1. Rekisterinpitäjä</h2>
+    <p>
+      Kim Kupiainen<br>
+      Sähköposti: <a href="mailto:kim.kupiainen@gmail.com">kim.kupiainen@gmail.com</a>
+    </p>
+    <p>
+      Ampumapäiväkirja on yksityishenkilön ylläpitämä maksuton harrastussovellus.
+      Se ei ole kaupallinen palvelu eikä sillä ole yritystä tai organisaatiota takanaan.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>2. Miten sovellus toimii</h2>
+    <p>
+      Ampumapäiväkirja on selainpohjainen verkkosovellus, joka toimii kokonaan
+      selaimen sisällä. Sovelluksella ei ole omaa taustapalvelinta, tietokantaa
+      eikä omia käyttäjätilejä. Ainoa ulkoinen palvelu, johon tietosi lähetetään,
+      on sinun oma Google-tilisi.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>3. Mitä tietoja kirjaat</h2>
+    <p>Sovellukseen kirjataan harjoituskohtaisia tietoja:</p>
+    <ul>
+      <li>Päivämäärä</li>
+      <li>Tapahtuma ja harjoitustyyppi</li>
+      <li>Asetyyppi, ase ja kaliiperi</li>
+      <li>Toimintatapa (TT1&ndash;TT4)</li>
+      <li>Harjoituspaikka</li>
+      <li>Laukausten määrä</li>
+      <li>Vapaaehtoinen muistiinpano</li>
+      <li>Vapaaehtoinen allekirjoitus &ndash; piirretään sormella tai hiirellä ja tallennetaan PNG-kuvana</li>
+    </ul>
+    <p>
+      Nämä tiedot lähetetään suoraan sinun omaan Google Sheets -taulukkoon
+      Google Sheets API:n kautta. Rekisterinpitäjä ei koskaan näe eikä tallenna niitä.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>4. Mihin tiedot tallentuvat</h2>
+    <p>
+      Kaikki tietosi tallentuvat yksinomaan sinun omaan Google Drivelläsi
+      tiedostoon nimeltä <code>ampumapaivakirja</code>. Voit avata, muokata tai
+      poistaa tämän tiedoston milloin tahansa suoraan
+      <a href="https://drive.google.com" target="_blank" rel="noopener">Google Drivessäsi</a>.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>5. Google-tilisi käyttöoikeudet</h2>
+    <p>Kirjautuessasi sovellus pyytää kaksi rajattua lupaa Google-tilillesi:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Lupa</th>
+          <th>Mihin sitä käytetään</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>spreadsheets</code></td>
+          <td>Ampumapäiväkirjataulukon lukeminen ja kirjoittaminen</td>
+        </tr>
+        <tr>
+          <td><code>drive.file</code></td>
+          <td>Sovelluksen itsensä luoman taulukon hakeminen Drive-haulla &ndash; sovellus ei pääse muihin Drive-tiedostoihisi</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Sovellus ei pyydä pääsyä sähköpostiisi, kalenteriisi, yhteystietoihisi
+      eikä muihin Google-palveluihin.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>6. Kolmannen osapuolen skriptit</h2>
+    <p>Sovellus lataa seuraavat ulkopuoliset kirjastot:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Kirjasto</th>
+          <th>Domain</th>
+          <th>Tarkoitus</th>
+          <th>Milloin ladataan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Google Sign-In</td>
+          <td><code>accounts.google.com</code></td>
+          <td>OAuth-kirjautuminen</td>
+          <td>Aina sivua avatessa</td>
+        </tr>
+        <tr>
+          <td>jsPDF 2.5.1</td>
+          <td><code>cdnjs.cloudflare.com</code></td>
+          <td>PDF-raporttien luominen selaimessa</td>
+          <td>Aina sivua avatessa</td>
+        </tr>
+        <tr>
+          <td>PDF.js 3.11.174</td>
+          <td><code>cdnjs.cloudflare.com</code></td>
+          <td>Ampuma.com-PDF:n tuominen</td>
+          <td>Vain kun PDF-tuontia käytetään ensimmäistä kertaa</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Cloudflare CDN ja Google näkevät IP-osoitteesi latauksen yhteydessä,
+      kuten kaikki verkkopalvelut. Sovellus ei kuitenkaan lähetä tietojasi
+      näille palveluille &ndash; kirjastot ovat pelkkää koodia, joka suoritetaan
+      paikallisesti selaimen sisällä.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>7. Selaimen paikallinen tallennus</h2>
+    <p>
+      Sovellus tallentaa selaimen <code>localStorage</code>-muistiin
+      käyttömukavuuden parantamiseksi:
+    </p>
+    <ul>
+      <li>Aiemmin käyttämäsi aseiden nimet, kailiiperit ja harjoituspaikat &ndash; ehdotusten näyttämiseksi lomakkeessa</li>
+      <li>Google Sheets -taulukkosi tunniste &ndash; jotta sovellus löytää taulukkosi automaattisesti seuraavalla kerralla</li>
+    </ul>
+    <p>
+      Nämä tiedot eivät koskaan siirry verkon yli. Voit poistaa ne tyhjentämällä
+      selaimen sivustokohtaiset tiedot.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>8. Ei analytiikkaa, ei evästeitä, ei seurantaa</h2>
+    <p>
+      Sovellus ei käytä analytiikkatyökaluja, käyttäjäseurantaa, mainosevästeitä,
+      istuntoseurantaa eikä mitään muutakaan kolmannen osapuolen seurantapalvelua.
+      Sovellus ei aseta omia evästeitä.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>9. PDF-toiminnot</h2>
+    <p>
+      <strong>PDF-vienti:</strong> Raportit luodaan kokonaan selaimen sisällä
+      jsPDF-kirjastolla. Mitään tietoja ei lähetetä ulkopuoliselle palvelimelle.
+    </p>
+    <p>
+      <strong>PDF-tuonti (Ampuma.com):</strong> Kun tuot vanhoja merkintöjä
+      Ampuma.com-PDF:stä, tiedosto luetaan kokonaan paikallisesti selaimen sisällä
+      PDF.js-kirjastolla. Tiedostoa ei lähetetä minnekään &ndash; luetut tiedot
+      kirjoitetaan suoraan sinun omaan Google Sheets -taulukkoon.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>10. Käyttäjän oikeudet</h2>
+    <p>
+      Koska tietosi ovat sinun omassa Google Drivessäsi, sinulla on täydellinen
+      hallinta niihin ilman, että tarvitset meiltä lupaa:
+    </p>
+    <ul>
+      <li><strong>Näkeminen ja muokkaaminen:</strong> avaa <code>ampumapaivakirja</code> Google Sheetsistä suoraan</li>
+      <li><strong>Poistaminen:</strong> poista tiedosto Google Drivestäsi &ndash; sen jälkeen tietoja ei ole enää missään</li>
+      <li><strong>Siirtäminen:</strong> tiedot ovat tavallisessa taulukkomuodossa; voit ladata ne esim. Excel- tai CSV-muodossa</li>
+    </ul>
+
+    <hr class="section-divider">
+
+    <h2>11. Muutokset tietosuojaselosteeseen</h2>
+    <p>
+      Mikäli sovellukseen lisätään toimintoja, jotka vaikuttavat tietosuojaan,
+      tätä selostetta päivitetään ennen muutoksen käyttöönottoa.
+      Päivämäärä sivun yläosassa ilmaisee voimassaolevan version.
+    </p>
+
+    <hr class="section-divider">
+
+    <h2>12. Yhteystiedot</h2>
+    <p>Tietosuojaan liittyvissä kysymyksissä ota yhteyttä:</p>
+    <p><a href="mailto:kim.kupiainen@gmail.com">kim.kupiainen@gmail.com</a></p>
+
   </div>
-  <script>document.querySelector('.menu-toggle').onclick = () => {
-  document.querySelector('.nav-links').classList.toggle('open');
-};</script>
+</div>
+
+<script>
+  document.querySelector('.menu-toggle').onclick = () => {
+    document.querySelector('.nav-links').classList.toggle('open');
+  };
+</script>
 </body>
 </html>
