@@ -95,6 +95,8 @@
     <button id="export-pistol-report" class="pdf-button" style="display:none">🔫 Pistooliraportti (2v)</button>
     <button id="export-renewal-report" class="pdf-button" style="display:none">📋 Uusintaraportti (12kk)</button>
     <button id="export-custom-report" class="pdf-button" style="display:none">📅 Oma raportti</button>
+    <button id="import-pdf" class="import-button" style="display:none">📥 Tuo Ampuma.com-PDF</button>
+    <input type="file" id="import-pdf-input" accept=".pdf" style="display:none">
     <div id="entry-cards"></div>
   </div>
 
@@ -162,6 +164,18 @@
       <div class="rifle-filter-actions">
         <button type="button" id="custom-cancel">Peruuta</button>
         <button type="button" id="custom-ok">Luo raportti</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="import-modal" class="modal" style="display:none;" role="dialog"
+       aria-modal="true" aria-labelledby="import-modal-title">
+    <div class="modal-content">
+      <h3 id="import-modal-title">Tuo Ampuma.com-PDF</h3>
+      <div id="import-preview"></div>
+      <div class="rifle-filter-actions">
+        <button type="button" id="import-cancel">Peruuta</button>
+        <button type="button" id="import-ok">Tuo merkinnät</button>
       </div>
     </div>
   </div>
