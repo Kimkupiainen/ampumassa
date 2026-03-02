@@ -245,6 +245,26 @@ button.pdf-button:hover {
   transform: scale(1.015);
 }
 
+button.import-button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 2px dashed #4a9eff;
+  color: #4a9eff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.7em 1em;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background 0.2s ease, transform 0.15s ease;
+  margin-top: 0.5rem;
+}
+
+button.import-button:hover {
+  background: rgba(74, 158, 255, 0.1);
+  transform: scale(1.015);
+}
+
 /* ── Donation button ────────────────────────────────────────────────── */
 .donation-button {
   display: inline-block;

@@ -57,6 +57,14 @@
     }[match]));
   }
 
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
   function showLoader() {
     document.getElementById('loader').style.display = 'flex';
   }
@@ -81,6 +89,7 @@
     document.getElementById('export-pistol-report').style.display = 'none';
     document.getElementById('export-renewal-report').style.display = 'none';
     document.getElementById('export-custom-report').style.display = 'none';
+    document.getElementById('import-pdf').style.display = 'none';
     document.getElementById('login-btn').style.display = 'inline';
     document.getElementById('login').innerHTML = '<p>Istunto vanhentunut. Kirjaudu uudelleen.</p>';
     hideLoader();
@@ -327,6 +336,7 @@
           document.getElementById('export-pistol-report').style.display = 'inline';
           document.getElementById('export-renewal-report').style.display = 'inline';
           document.getElementById('export-custom-report').style.display = 'inline';
+          document.getElementById('import-pdf').style.display = 'inline';
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
@@ -1068,6 +1078,238 @@
       }
     }
   };
+
+  // ── Ampuma.com PDF import ─────────────────────────────────────────────────
+
+  document.getElementById('import-pdf').onclick = () => {
+    document.getElementById('import-pdf-input').click();
+  };
+
+  document.getElementById('import-pdf-input').onchange = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+
+    showLoader();
+    try {
+      if (!window.pdfjsLib) {
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+
+      const text = await extractAmpumaPDFText(file);
+      // Log extracted text so we can debug if the parser fails
+      console.log('[Ampuma import] raw extracted text:\n' + text.slice(0, 4000));
+
+      const rows = parseAmpumaPDFText(text);
+
+      if (rows.length === 0) {
+        showStatus(
+          'PDF:st\u00e4 ei l\u00f6ytynyt merkint\u00f6j\u00e4. ' +
+          'Avaa selaimen kehitysty\u00f6kalut (F12 \u2192 Console) n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.',
+          true
+        );
+        return;
+      }
+
+      const totalRounds = rows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
+      const s = rows[0];
+      document.getElementById('import-preview').innerHTML =
+        '<p>L\u00f6ydettiin <strong>' + rows.length + ' suoritusta</strong> yhteens\u00e4 <strong>' + totalRounds + ' laukauksella</strong>.</p>' +
+        '<p style="font-size:0.85rem;opacity:0.75">Esimerkki: ' + escapeHTML(s[0]) + ' \u2013 ' + escapeHTML(s[1]) + ', ' + escapeHTML(s[2]) + ', ' + escapeHTML(s[6]) + '</p>' +
+        '<p style="font-size:0.85rem;opacity:0.75">Huom: allekirjoituskuvat eiv\u00e4t siirry; ammunnanjohtajan nimi tallennetaan kuvaus-kentt\u00e4\u00e4n.</p>';
+
+      window._pendingImportRows = rows;
+      document.getElementById('import-modal').style.display = 'flex';
+    } catch (err) {
+      console.error('PDF import error:', err);
+      showStatus('PDF:n lukeminen ep\u00e4onnistui: ' + err.message, true);
+    } finally {
+      hideLoader();
+    }
+  };
+
+  document.getElementById('import-cancel').onclick = () => {
+    document.getElementById('import-modal').style.display = 'none';
+    window._pendingImportRows = null;
+  };
+
+  document.getElementById('import-ok').onclick = async () => {
+    const rows = window._pendingImportRows;
+    if (!rows) return;
+    document.getElementById('import-modal').style.display = 'none';
+    window._pendingImportRows = null;
+
+    showLoader();
+    try {
+      const sheetId = await getSheetIdByTitle(SHEET_TAB);
+      if (!sheetId) throw new Error('Sheet tab not found');
+
+      const countData = await apiFetch(
+        'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId + '/values/' + SHEET_TAB + '!A:A'
+      );
+      const startRow = countData.values?.length ?? 1;
+
+      const CHUNK = 50;
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        const chunk = rows.slice(i, i + CHUNK);
+        await apiFetch(
+          'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId + ':batchUpdate',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                updateCells: {
+                  start: { sheetId, rowIndex: startRow + i, columnIndex: 0 },
+                  rows: chunk.map(r => ({
+                    values: r.map(val => ({ userEnteredValue: { stringValue: String(val) } }))
+                  })),
+                  fields: 'userEnteredValue'
+                }
+              }]
+            })
+          }
+        );
+      }
+
+      showStatus('Tuotu ' + rows.length + ' merkint\u00e4\u00e4 onnistuneesti!');
+      loadEntries();
+    } catch (err) {
+      if (err.message !== 'TOKEN_EXPIRED') {
+        console.error('Import write error:', err);
+        showStatus('Merkint\u00f6jen kirjoitus ep\u00e4onnistui.', true);
+      }
+    } finally {
+      hideLoader();
+    }
+  };
+
+  // Extract text from PDF using pdf.js, grouping items by y-coordinate with a
+  // tolerance to handle slight baseline variations within a visual line.
+  async function extractAmpumaPDFText(file) {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const allLines = [];
+
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+
+      // Group items whose y-coordinates are within 4px of each other
+      const groups = [];
+      for (const item of content.items) {
+        const str = item.str;
+        if (!str || !str.trim()) continue;
+        const y = item.transform[5];
+        const x = item.transform[4];
+        let placed = false;
+        for (const g of groups) {
+          if (Math.abs(y - g.y) <= 4) {
+            g.items.push({ x, str });
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) groups.push({ y, items: [{ x, str }] });
+      }
+
+      // PDF y=0 is bottom, so sort descending = top-to-bottom reading order
+      groups.sort((a, b) => b.y - a.y);
+      for (const g of groups) {
+        g.items.sort((a, b) => a.x - b.x);
+        const line = g.items.map(i => i.str).join(' ').trim();
+        if (line) allLines.push(line);
+      }
+    }
+
+    return allLines.join('\n');
+  }
+
+  // Parse text extracted from an Ampuma.com diary PDF into rows suitable for
+  // the Google Sheet.  The PDF renders each performance as a single visual line
+  // with all fields (discipline, weapon type, TT, model, caliber, rounds)
+  // spread across columns at the same y-coordinate.
+  function parseAmpumaPDFText(rawText) {
+    // Ensure "Ammunnanjohtajan allekirjoitus" is always on its own line
+    // regardless of where pdf.js placed it relative to surrounding items.
+    const text = rawText
+      .replace(/Ammunnanjohtajan allekirjoitus/gi, '\nAmmunnanjohtajan allekirjoitus\n')
+      .replace(/\n{2,}/g, '\n');
+
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const rows  = [];
+
+    // "N. DD.MM.YYYY - [Suomi, ]City, Location"
+    const ENTRY_HDR = /^(\d+)\.\s+(\d{2}\.\d{2}\.\d{4})\s+-\s+(?:Suomi,\s*)?(.+)$/;
+
+    // Full performance line — all fields on one line:
+    // "N. Discipline (SessionType) WeaponType - TTN (running) Model, Caliber N laukausta"
+    const PERF_LINE = /^(\d+)\.\s+(.+?)\s+\((.+?)\)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)\s+\(\d+\)\s+(.+?),\s*([^\s,]+)\s+(\d+)\s+laukausta/i;
+
+    // Lines to skip (page headers, user-info box, verification text, metadata)
+    const SKIP = /^(Tulostettu|Tulostemallin versio|Ampuma\s+[-\u2013]\s+s\u00e4hk\u00f6inen|K\u00e4ytt\u00e4j\u00e4tietojen versio|Merkinn\u00e4n tiiviste|P\u00e4iv\u00e4kirjamerkint\u00e4 lis\u00e4tty|Ampuma\.com|K\u00e4ytt\u00e4j\u00e4n tiedot|K\u00e4ytt\u00e4j\u00e4n unikki|Voit |Etunimi|Sukunimi|Tulosteen tunniste|Ampuman k\u00e4ytt\u00f6|T\u00e4m\u00e4 ampuma|Ne sis\u00e4lt\u00e4v\u00e4t|P\u00e4iv\u00e4kirjamerkinn\u00e4t on|Suorituksissa|Suorituksen laukausten|Ampuman avulla|Suoritukset jakautuivat|K\u00e4ytt\u00e4j\u00e4tunnus|K\u00e4ytt\u00e4j\u00e4tietojen nykyinen|allekirjoitettu digitaalisesti|\d+\s*\(\d+\))/i;
+
+    let date = null, location = null;
+    let currentRow = null;
+    let expectInstructor = false;
+
+    function flush() {
+      if (currentRow) { rows.push(currentRow); currentRow = null; }
+      expectInstructor = false;
+    }
+
+    for (const line of lines) {
+      // Boilerplate: skip and reset instructor-name wait
+      if (SKIP.test(line)) { expectInstructor = false; continue; }
+
+      // Instructor name sits on its own line after the label + signature image
+      if (expectInstructor) {
+        if (currentRow && !line.includes(':')) currentRow[8] = 'Ammunnanjohtaja: ' + line.trim();
+        expectInstructor = false;
+        continue;
+      }
+
+      if (/^Ammunnanjohtajan allekirjoitus$/i.test(line)) {
+        expectInstructor = true;
+        continue;
+      }
+
+      // Diary entry header
+      const em = line.match(ENTRY_HDR);
+      if (em) {
+        flush();
+        const [day, month, year] = em[2].split('.');
+        date     = year + '-' + month + '-' + day;
+        location = em[3].trim();
+        continue;
+      }
+
+      // Performance line (all data on one visual line)
+      const pm = line.match(PERF_LINE);
+      if (pm) {
+        flush();
+        const [, , disc, sessType, weaponType, tt, model, caliber, roundsStr] = pm;
+        currentRow = [
+          date        || '',
+          disc.trim() + ' (' + sessType.trim() + ')',
+          weaponType,
+          caliber.trim(),
+          model.trim(),
+          tt,
+          location    || '',
+          roundsStr,
+          '',   // notes/instructor (filled when "Ammunnanjohtajan allekirjoitus" is found)
+          ''    // signature
+        ];
+        continue;
+      }
+    }
+
+    flush();
+    return rows;
+  }
 
   let lastScrollY = window.scrollY;
   const header = document.querySelector('.site-header');
