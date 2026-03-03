@@ -218,13 +218,6 @@ form button[type="button"]:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ── PDF export buttons ─────────────────────────────────────────────── */
-#export-pdf,
-#export-pistol-report,
-#export-rifle-report {
-  /* Visibility is controlled by JS; hidden by default */
-  display: none;
-}
 
 button.pdf-button {
   display: block;
