@@ -1125,29 +1125,59 @@
       // Log extracted text so we can debug if the parser fails
       console.log('[Ampuma import] raw extracted text:\n' + text.slice(0, 4000));
 
-      const { rows, skipped } = parseAmpumaPDFText(text);
+      const { rows, skipped, expectedPerf, expectedRounds } = parseAmpumaPDFText(text);
 
       if (rows.length === 0) {
-        const skipHint = skipped.length
-          ? ' Tunnistamattomia rivej\u00e4: ' + skipped.length + '. Avaa F12 \u2192 Console n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.'
-          : ' Avaa selaimen kehitysty\u00f6kalut (F12 \u2192 Console) n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.';
-        showStatus('PDF:st\u00e4 ei l\u00f6ytynyt merkint\u00f6j\u00e4.' + skipHint, true);
+        const hint = expectedPerf
+          ? ' PDF lupasi ' + expectedPerf + ' suoritusta mutta yht\u00e4\u00e4n ei tunnistettu.'
+          : skipped.length
+            ? ' Tunnistamattomia rivej\u00e4: ' + skipped.length + '.'
+            : '';
+        showStatus('PDF:st\u00e4 ei l\u00f6ytynyt merkint\u00f6j\u00e4.' + hint +
+          ' Avaa F12 \u2192 Console n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.', true);
         console.warn('[Ampuma import] skipped lines:', skipped);
         return;
       }
 
       const totalRounds = rows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
       const s = rows[0];
+
+      // Validation banner: compare against the PDF's own summary numbers
+      let validationNote = '';
+      if (expectedPerf !== null) {
+        const perfOk   = rows.length   === expectedPerf;
+        const roundsOk = totalRounds   === expectedRounds;
+        if (perfOk && roundsOk) {
+          validationNote =
+            '<p style="font-size:0.85rem;color:#4caf50">\u2705 T\u00e4sm\u00e4\u00e4 PDF:n yhteenvetoon: ' +
+            expectedPerf + ' suoritusta, ' + expectedRounds.toLocaleString('fi-FI') + ' laukausta.</p>';
+        } else {
+          const missing = expectedPerf - rows.length;
+          validationNote =
+            '<p style="font-size:0.85rem;color:#f44336">\u26a0\ufe0f PDF lupasi <strong>' +
+            expectedPerf + ' suoritusta</strong> (' + (expectedRounds || '?').toLocaleString('fi-FI') + ' laukausta) ' +
+            'mutta tunnistettiin vain <strong>' + rows.length + '</strong>' +
+            (missing > 0 ? ' \u2014 <strong>' + missing + ' merkint\u00e4\u00e4 puuttuu</strong>' : '') + '.' +
+            ' Avaa F12 \u2192 Console n\u00e4hd\u00e4ksesi ohitetut rivit.</p>';
+        }
+      }
+
       const skippedNote = skipped.length
         ? '<p style="font-size:0.85rem;color:var(--accent-warn, #f0a500)">\u26a0\ufe0f ' +
-          skipped.length + ' merkint\u00e4\u00e4 ohitettiin (tuntematon muoto). ' +
+          skipped.length + ' rivi\u00e4 ohitettiin (tuntematon muoto). ' +
           'Lis\u00e4\u00e4 ne k\u00e4sin tai l\u00e4het\u00e4 n\u00e4yte kehitt\u00e4j\u00e4lle.</p>'
         : '';
+
       document.getElementById('import-preview').innerHTML =
-        '<p>L\u00f6ydettiin <strong>' + rows.length + ' suoritusta</strong> yhteens\u00e4 <strong>' + totalRounds + ' laukauksella</strong>.</p>' +
-        '<p style="font-size:0.85rem;opacity:0.75">Esimerkki: ' + escapeHTML(s[0]) + ' \u2013 ' + escapeHTML(s[1]) + ', ' + escapeHTML(s[2]) + ', ' + escapeHTML(s[6]) + '</p>' +
+        '<p>L\u00f6ydettiin <strong>' + rows.length + ' suoritusta</strong> yhteens\u00e4 <strong>' +
+        totalRounds.toLocaleString('fi-FI') + ' laukauksella</strong>.</p>' +
+        validationNote +
         skippedNote +
-        '<p style="font-size:0.85rem;opacity:0.75">Huom: allekirjoituskuvat eiv\u00e4t siirry; ammunnanjohtajan nimi tallennetaan kuvaus-kentt\u00e4\u00e4n.</p>';
+        '<p style="font-size:0.85rem;opacity:0.75">Esimerkki: ' + escapeHTML(s[0]) + ' \u2013 ' +
+        escapeHTML(s[1]) + ', ' + escapeHTML(s[2]) + ', ' + escapeHTML(s[6]) + '</p>' +
+        '<p style="font-size:0.85rem;opacity:0.75">Huom: allekirjoituskuvat eiv\u00e4t siirry; ' +
+        'ammunnanjohtajan nimi tallennetaan kuvaus-kentt\u00e4\u00e4n.</p>';
+
       if (skipped.length) console.warn('[Ampuma import] skipped lines:', skipped);
 
       window._pendingImportRows = rows;
@@ -1268,6 +1298,13 @@
       .replace(/Ammunnanjohtajan allekirjoitus/gi, '\nAmmunnanjohtajan allekirjoitus\n')
       .replace(/\n{2,}/g, '\n');
 
+    // Extract the PDF's own summary promise before splitting into lines.
+    // "...yhteensä N suoritusta, jotka sisältävät yhteensä M laukausta."
+    // The sentence may span two adjacent extracted lines, so search rawText.
+    const summaryMatch = rawText.replace(/\s+/g, ' ')
+      .match(/(\d+)\s+suoritusta[^.]*?yhteensä\s+(\d+)\s+laukausta/i);
+    const expectedPerf   = summaryMatch ? parseInt(summaryMatch[1]) : null;
+    const expectedRounds = summaryMatch ? parseInt(summaryMatch[2]) : null;
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     const rows  = [];
 
@@ -1378,7 +1415,7 @@
     }
 
     flush();
-    return { rows, skipped };
+    return { rows, skipped, expectedPerf, expectedRounds };
   }
 
   let lastScrollY = window.scrollY;
