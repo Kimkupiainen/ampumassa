@@ -43,7 +43,17 @@
   function cancelEdit() {
     document.getElementById('log-form').reset();
     editingRow = null;
-    showStatus('Muokkaus peruttu.');
+    document.getElementById('form-modal').style.display = 'none';
+    showStatus('');
+  }
+
+  function openFormModal(title, showCancelBtn) {
+    document.getElementById('form-modal-title').textContent = title;
+    document.getElementById('form-cancel-btn').style.display = showCancelBtn ? 'block' : 'none';
+    showStatus('');
+    document.getElementById('form-modal').style.display = 'flex';
+    // Focus first field after transition
+    setTimeout(() => document.getElementById('date').focus(), 80);
   }
 
   function escapeHTML(str) {
@@ -83,13 +93,10 @@
   // Called when a 401 comes back from any API request
   function handleTokenExpiry() {
     accessToken = null;
-    document.getElementById('log-form').style.display = 'none';
-    document.getElementById('load-entries').style.display = 'none';
-    document.getElementById('export-pdf').style.display = 'none';
-    document.getElementById('export-pistol-report').style.display = 'none';
-    document.getElementById('export-renewal-report').style.display = 'none';
-    document.getElementById('export-custom-report').style.display = 'none';
-    document.getElementById('import-pdf').style.display = 'none';
+    document.body.classList.remove('logged-in');
+    document.getElementById('form-modal').style.display = 'none';
+    document.getElementById('stats-bar').style.display = 'none';
+    document.getElementById('entry-cards').innerHTML = '';
     document.getElementById('login-btn').style.display = 'inline';
     document.getElementById('login').innerHTML = '<p>Istunto vanhentunut. Kirjaudu uudelleen.</p>';
     hideLoader();
@@ -330,13 +337,7 @@
         accessToken = response.access_token;
         try {
           await findOrCreateSheet();
-          document.getElementById('log-form').style.display = 'block';
-          document.getElementById('load-entries').style.display = 'inline';
-          document.getElementById('export-pdf').style.display = 'inline';
-          document.getElementById('export-pistol-report').style.display = 'inline';
-          document.getElementById('export-renewal-report').style.display = 'inline';
-          document.getElementById('export-custom-report').style.display = 'inline';
-          document.getElementById('import-pdf').style.display = 'inline';
+          document.body.classList.add('logged-in');
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
@@ -416,6 +417,7 @@
           })
         });
 
+        document.getElementById('form-modal').style.display = 'none';
         showConfirmation(row.map(c => c.userEnteredValue?.stringValue ?? c.userEnteredValue?.numberValue ?? ''));
         document.getElementById('log-form').reset();
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
@@ -630,6 +632,30 @@
         signingRowIndex = null;
       }
     };
+
+    // ── FAB + form-modal handlers ────────────────────────────────────
+    document.getElementById('fab-add').onclick = () => {
+      document.getElementById('log-form').reset();
+      editingRow = null;
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date').value = today;
+      openFormModal('Uusi merkintä', false);
+    };
+
+    document.getElementById('form-modal-close').onclick = cancelEdit;
+    document.getElementById('form-cancel-btn').onclick = cancelEdit;
+
+    // Click outside modal content closes it
+    document.getElementById('form-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('form-modal')) cancelEdit();
+    });
+
+    // Escape key closes form modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('form-modal').style.display === 'flex') {
+        cancelEdit();
+      }
+    });
   };
 
   window.editRow = async (index) => {
@@ -638,9 +664,6 @@
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:I${index + 1}`
       );
       const v = data.values?.[0] || [];
-
-      const form = document.getElementById('log-form');
-      form.style.display = 'block';
 
       ['date', 'event', 'type', 'caliber', 'weapon', 'tt', 'location', 'rounds', 'notes'].forEach((id, i) => {
         const el = document.getElementById(id);
@@ -652,8 +675,7 @@
       });
 
       editingRow = index;
-      showStatus(`Muokataan riviä ${index}`);
-      setTimeout(() => window.scrollTo(0, 0), 50);
+      openFormModal('Muokkaa merkintää', true);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
         showStatus('Rivin lataus epäonnistui.', true);

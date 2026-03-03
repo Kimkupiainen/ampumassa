@@ -16,7 +16,7 @@
 
 <header class="site-header">
   <div class="nav-container">
-    <div class="brand"></div>
+    <div class="brand">AMPUMASSA</div>
     <button class="menu-toggle" aria-label="Valikko">☰</button>
     <nav class="nav-links">
       <a href="index.html" class="active">Etusivu</a>
@@ -26,7 +26,7 @@
 </header>
 
 <main>
-  <h1>
+  <h1 id="page-heading">
     <img src="ampumassalogo.png" alt="Ampumassa logo" class="logo-img">
     <br>Ampumapäiväkirja netissä
   </h1>
@@ -47,56 +47,27 @@
     </p>
   </div>
 
-  <form id="log-form" style="display:none">
-    <input type="date" id="date" required>
-    <input type="text" id="event" placeholder="Tapahtuma" required>
-
-    <select id="type" required>
-      <option value="">Valitse asetyyppi</option>
-      <option value="Pistooli">Pistooli</option>
-      <option value="Kivääri">Kivääri</option>
-      <option value="Haulikko">Haulikko</option>
-      <option value="Pienoiskivääri">Pienoiskivääri</option>
-      <option value="Muu">Muu</option>
-    </select>
-
-    <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
-    <datalist id="calibers"></datalist>
-
-    <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
-    <datalist id="weapons"></datalist>
-
-    <select id="tt" required>
-      <option value="">Valitse toimintatapa</option>
-      <option value="TT1">TT1 – kertatuli ilman lipasta</option>
-      <option value="TT2">TT2 – kertatuli lippaalla</option>
-      <option value="TT3">TT3 – itselataava kertatuli</option>
-      <option value="TT4">TT4 – sarjatuli</option>
-    </select>
-
-    <input list="locations" id="location" placeholder="Paikka" required>
-    <datalist id="locations"></datalist>
-
-    <input type="number" id="rounds" placeholder="Laukaukset" required>
-    <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
-
-    <div class="form-actions">
-      <button type="submit">Tallenna merkintä</button>
-      <button type="button" onclick="cancelEdit()">Peru muokkaus</button>
-    </div>
-    <div id="status"></div>
-  </form>
-
   <div id="stats-bar" style="display:none"></div>
 
   <div id="entries">
-    <button id="load-entries" style="display:none">📋 Päivitä merkinnät</button>
-    <button id="export-pdf" class="pdf-button" style="display:none">🎯 Lataa ampumahistoriasi PDF:nä</button>
-    <button id="export-pistol-report" class="pdf-button" style="display:none">🔫 Pistooliraportti (2v)</button>
-    <button id="export-renewal-report" class="pdf-button" style="display:none">📋 Uusintaraportti (12kk)</button>
-    <button id="export-custom-report" class="pdf-button" style="display:none">📅 Oma raportti</button>
-    <button id="import-pdf" class="import-button" style="display:none">📥 Tuo Ampuma.com-PDF</button>
-    <input type="file" id="import-pdf-input" accept=".pdf" style="display:none">
+    <div id="entries-toolbar">
+      <button id="load-entries" class="refresh-btn" title="Päivitä merkinnät" aria-label="Päivitä merkinnät">
+        ↺ Päivitä
+      </button>
+    </div>
+
+    <details id="tools-panel">
+      <summary>📊 Raportit ja tuonti</summary>
+      <div class="tools-buttons">
+        <button id="export-pdf" class="pdf-button">🎯 Lataa ampumahistoriasi PDF:nä</button>
+        <button id="export-pistol-report" class="pdf-button">🔫 Pistooliraportti (2v)</button>
+        <button id="export-renewal-report" class="pdf-button">📋 Uusintaraportti (12kk)</button>
+        <button id="export-custom-report" class="pdf-button">📅 Oma raportti</button>
+        <button id="import-pdf" class="import-button">📥 Tuo Ampuma.com-PDF</button>
+        <input type="file" id="import-pdf-input" accept=".pdf" style="display:none">
+      </div>
+    </details>
+
     <div id="entry-cards"></div>
   </div>
 
@@ -104,6 +75,61 @@
     <div class="spinner"></div>
   </div>
 
+  <!-- ── Floating action button ──────────────────────────────────── -->
+  <button id="fab-add" aria-label="Lisää uusi merkintä" title="Lisää uusi merkintä">+</button>
+
+  <!-- ── New / edit entry form modal ────────────────────────────── -->
+  <div id="form-modal" class="modal" style="display:none" role="dialog"
+       aria-modal="true" aria-labelledby="form-modal-title">
+    <div class="modal-content form-modal-content">
+      <div class="form-modal-header">
+        <h3 id="form-modal-title">Uusi merkintä</h3>
+        <button type="button" id="form-modal-close" aria-label="Sulje">×</button>
+      </div>
+
+      <form id="log-form">
+        <input type="date" id="date" required>
+        <input type="text" id="event" placeholder="Tapahtuma" required>
+
+        <select id="type" required>
+          <option value="">Valitse asetyyppi</option>
+          <option value="Pistooli">Pistooli</option>
+          <option value="Kivääri">Kivääri</option>
+          <option value="Haulikko">Haulikko</option>
+          <option value="Pienoiskivääri">Pienoiskivääri</option>
+          <option value="Muu">Muu</option>
+        </select>
+
+        <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
+        <datalist id="calibers"></datalist>
+
+        <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
+        <datalist id="weapons"></datalist>
+
+        <select id="tt" required>
+          <option value="">Valitse toimintatapa</option>
+          <option value="TT1">TT1 – kertatuli ilman lipasta</option>
+          <option value="TT2">TT2 – kertatuli lippaalla</option>
+          <option value="TT3">TT3 – itselataava kertatuli</option>
+          <option value="TT4">TT4 – sarjatuli</option>
+        </select>
+
+        <input list="locations" id="location" placeholder="Paikka" required>
+        <datalist id="locations"></datalist>
+
+        <input type="number" id="rounds" placeholder="Laukaukset" required>
+        <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
+
+        <div class="form-actions">
+          <button type="submit">Tallenna merkintä</button>
+          <button type="button" id="form-cancel-btn">Peru muokkaus</button>
+        </div>
+        <div id="status"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Save confirmation modal ────────────────────────────────── -->
   <div id="confirmation-modal" class="modal" role="dialog" aria-modal="true"
        aria-labelledby="modal-title" style="display:none;">
     <div class="modal-content">
