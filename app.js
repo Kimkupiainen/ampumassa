@@ -1125,23 +1125,30 @@
       // Log extracted text so we can debug if the parser fails
       console.log('[Ampuma import] raw extracted text:\n' + text.slice(0, 4000));
 
-      const rows = parseAmpumaPDFText(text);
+      const { rows, skipped } = parseAmpumaPDFText(text);
 
       if (rows.length === 0) {
-        showStatus(
-          'PDF:st\u00e4 ei l\u00f6ytynyt merkint\u00f6j\u00e4. ' +
-          'Avaa selaimen kehitysty\u00f6kalut (F12 \u2192 Console) n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.',
-          true
-        );
+        const skipHint = skipped.length
+          ? ' Tunnistamattomia rivej\u00e4: ' + skipped.length + '. Avaa F12 \u2192 Console n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.'
+          : ' Avaa selaimen kehitysty\u00f6kalut (F12 \u2192 Console) n\u00e4hd\u00e4ksesi mit\u00e4 PDF:st\u00e4 saatiin.';
+        showStatus('PDF:st\u00e4 ei l\u00f6ytynyt merkint\u00f6j\u00e4.' + skipHint, true);
+        console.warn('[Ampuma import] skipped lines:', skipped);
         return;
       }
 
       const totalRounds = rows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
       const s = rows[0];
+      const skippedNote = skipped.length
+        ? '<p style="font-size:0.85rem;color:var(--accent-warn, #f0a500)">\u26a0\ufe0f ' +
+          skipped.length + ' merkint\u00e4\u00e4 ohitettiin (tuntematon muoto). ' +
+          'Lis\u00e4\u00e4 ne k\u00e4sin tai l\u00e4het\u00e4 n\u00e4yte kehitt\u00e4j\u00e4lle.</p>'
+        : '';
       document.getElementById('import-preview').innerHTML =
         '<p>L\u00f6ydettiin <strong>' + rows.length + ' suoritusta</strong> yhteens\u00e4 <strong>' + totalRounds + ' laukauksella</strong>.</p>' +
         '<p style="font-size:0.85rem;opacity:0.75">Esimerkki: ' + escapeHTML(s[0]) + ' \u2013 ' + escapeHTML(s[1]) + ', ' + escapeHTML(s[2]) + ', ' + escapeHTML(s[6]) + '</p>' +
+        skippedNote +
         '<p style="font-size:0.85rem;opacity:0.75">Huom: allekirjoituskuvat eiv\u00e4t siirry; ammunnanjohtajan nimi tallennetaan kuvaus-kentt\u00e4\u00e4n.</p>';
+      if (skipped.length) console.warn('[Ampuma import] skipped lines:', skipped);
 
       window._pendingImportRows = rows;
       document.getElementById('import-modal').style.display = 'flex';
@@ -1273,12 +1280,20 @@
     // so the (?:\s*\(\d+\))? group is optional.
     const PERF_LINE = /^(\d+)\.\s+(.+?)\s+\((.+?)\)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)(?:\s*\(\d+\))?\s+(.+?),\s*([^\s,]+)\s+(\d+)\s+laukausta/i;
 
+    // Tuomarointi / officiating entry — no weapon model, no TT, no shots fired.
+    // "N. Tuomarointi WeaponType(count)[, WeaponType(count)...] [event/description]"
+    const TUOMAROINTI_LINE = /^(\d+)\.\s+(Tuomarointi)\s*(.*)/i;
+
     // Lines to skip (page headers, user-info box, verification text, metadata)
     const SKIP = /^(Tulostettu|Tulostemallin versio|Ampuma\s+[-\u2013]\s+s\u00e4hk\u00f6inen|K\u00e4ytt\u00e4j\u00e4tietojen versio|Merkinn\u00e4n tiiviste|P\u00e4iv\u00e4kirjamerkint\u00e4 lis\u00e4tty|Ampuma\.com|K\u00e4ytt\u00e4j\u00e4n tiedot|K\u00e4ytt\u00e4j\u00e4n unikki|Voit |Etunimi|Sukunimi|Tulosteen tunniste|Ampuman k\u00e4ytt\u00f6|T\u00e4m\u00e4 ampuma|Ne sis\u00e4lt\u00e4v\u00e4t|P\u00e4iv\u00e4kirjamerkinn\u00e4t on|Suorituksissa|Suorituksen laukausten|Ampuman avulla|Suoritukset jakautuivat|K\u00e4ytt\u00e4j\u00e4tunnus|K\u00e4ytt\u00e4j\u00e4tietojen nykyinen|allekirjoitettu digitaalisesti|\d+\s*\(\d+\))/i;
+
+    // Looks like a numbered performance entry but didn't match any known format
+    const NUMBERED_LINE = /^(\d+)\.\s+[A-Za-z\u00c0-\u017e]/;
 
     let date = null, location = null;
     let currentRow = null;
     let expectInstructor = false;
+    const skipped = [];  // unrecognised performance lines
 
     function flush() {
       if (currentRow) { rows.push(currentRow); currentRow = null; }
@@ -1330,10 +1345,40 @@
         ];
         continue;
       }
+
+      // Tuomarointi / officiating — no single weapon, no TT, 0 shots
+      const tm = line.match(TUOMAROINTI_LINE);
+      if (tm) {
+        flush();
+        const rest = tm[3].trim();
+        // rest typically: "Haulikko (1), Kivääri (9), Pistooli (14) EventName Description"
+        // Split weapon-type tokens from the trailing event/description text
+        const weaponMatch = rest.match(/^((?:(?:Haulikko|Kiv\u00e4\u00e4ri|Pistooli|Pienoiskiv\u00e4\u00e4ri|Muu)\s*\(\d+\)(?:,\s*)?)+)/i);
+        const weaponTypes = weaponMatch ? weaponMatch[1].replace(/\s*\(\d+\)/g, '').replace(/,\s*/g, ', ').trim() : '';
+        const desc        = weaponMatch ? rest.slice(weaponMatch[0].length).trim() : rest;
+        currentRow = [
+          date        || '',
+          'Tuomarointi',
+          weaponTypes || 'Tuomarointi',
+          '',           // caliber — not applicable
+          '',           // model  — not applicable
+          '',           // TT    — not applicable
+          location    || '',
+          '0',          // 0 shots fired
+          desc,         // event name / description
+          ''            // signature
+        ];
+        continue;
+      }
+
+      // Track numbered lines that matched no known pattern (for user feedback)
+      if (NUMBERED_LINE.test(line) && !ENTRY_HDR.test(line)) {
+        skipped.push(line.slice(0, 100));
+      }
     }
 
     flush();
-    return rows;
+    return { rows, skipped };
   }
 
   let lastScrollY = window.scrollY;
