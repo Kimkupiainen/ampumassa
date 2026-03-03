@@ -338,6 +338,7 @@
         try {
           await findOrCreateSheet();
           document.body.classList.add('logged-in');
+          document.getElementById('tools-panel').setAttribute('open', '');
           document.getElementById('login').innerHTML = '<p>Olet kirjautunut sisään</p>';
           populateDatalist("weapons", "weapons");
           populateDatalist("locations", "locations");
