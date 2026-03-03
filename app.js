@@ -1311,11 +1311,17 @@
     // "N. DD.MM.YYYY - [Suomi, ]City, Location"
     const ENTRY_HDR = /^(\d+)\.\s+(\d{2}\.\d{2}\.\d{4})\s+-\s+(?:Suomi,\s*)?(.+)$/;
 
-    // Full performance line — all fields on one line:
-    // "N. Discipline (SessionType) WeaponType - TTN [(running)] Model, Caliber N laukausta"
-    // When the TT running total reaches 10+ digits it wraps to the next line in the PDF,
-    // so the (?:\s*\(\d+\))? group is optional.
-    const PERF_LINE = /^(\d+)\.\s+(.+?)\s+\((.+?)\)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Muu)\s+-\s+(TT\d)(?:\s*\(\d+\))?\s+(.+?),\s*([^\s,]+)\s+(\d+)\s+laukausta/i;
+    // Full performance line — all fields on one visual line.
+    //
+    // Flexible version that handles:
+    //  • Session type optional or unclosed: "Practical (Peruskilpailu, Kansalliset Pistooli…"
+    //  • No session type at all: "Sovellettu reserviläisammunta Kivääri - TT3…"
+    //  • TT level optional: "Pienoiskivääri - CMMG (FP FR-15), .22 LR 150 laukausta"
+    //  • Two-word calibers: "9 mm", ".22 LR", ".223 Rem", "12 cal"
+    //  • Pienoispistooli as weapon type
+    //
+    // Groups: (1)num (2)disc+session (3)weaponType (4)tt? (5)model (6)caliber (7)rounds
+    const PERF_LINE = /^(\d+)\.\s+(.+?)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Pienoispistooli|Muu)\s+-\s+(?:(TT\d+)(?:\s*\(\d+\))?\s+)?(.+?),\s*(\S+(?:\s+[^\d\s]\S*)?)\s+(\d+)\s+laukausta/i;
 
     // Tuomarointi / officiating entry — no weapon model, no TT, no shots fired.
     // "N. Tuomarointi WeaponType(count)[, WeaponType(count)...] [event/description]"
@@ -1367,14 +1373,22 @@
       const pm = line.match(PERF_LINE);
       if (pm) {
         flush();
-        const [, , disc, sessType, weaponType, tt, model, caliber, roundsStr] = pm;
+        // Groups: (1)num (2)discFull (3)weaponType (4)tt? (5)model (6)caliber (7)rounds
+        const [, , discFull, weaponType, tt, model, caliber, roundsStr] = pm;
+        // Extract optional session type from the combined discipline string.
+        // Handles: "Practical (Harjoitus)" → disc="Practical", sess="Harjoitus"
+        //          "Sovellettu reserviläisammunta" → disc=same, sess=""
+        //          "Practical (Peruskilpailu, Kansalliset" → disc="Practical", sess="Peruskilpailu, Kansalliset"
+        const sessMatch = discFull.trim().match(/^(.*?)\s*\(([^)]+)\)?\s*$/);
+        const disc     = (sessMatch && sessMatch[2]) ? sessMatch[1].trim() : discFull.trim();
+        const sessType = (sessMatch && sessMatch[2]) ? sessMatch[2].trim() : '';
         currentRow = [
           date        || '',
-          disc.trim() + ' (' + sessType.trim() + ')',
+          disc + (sessType ? ' (' + sessType + ')' : ''),
           weaponType,
           caliber.trim(),
           model.trim(),
-          tt,
+          tt          || '',
           location    || '',
           roundsStr,
           '',   // notes/instructor (filled when "Ammunnanjohtajan allekirjoitus" is found)
