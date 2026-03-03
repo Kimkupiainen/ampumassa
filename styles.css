@@ -763,170 +763,6 @@ button.sign {
 
 button.sign:hover { background: #2e7d32 !important; }
 
-/* ── Logged-in visibility (body.logged-in set by JS after auth) ────── */
-
-/* Hide hero section once user is logged in */
-.logged-in #page-heading { display: none; }
-.logged-in #intro        { display: none; }
-
-/* Show toolbar, tools panel and FAB once logged in */
-.logged-in #entries-toolbar { display: flex; }
-.logged-in #tools-panel     { display: block; }
-.logged-in #fab-add         { display: flex; }
-
-/* ── Entries toolbar (refresh button row) ───────────────────────────── */
-#entries-toolbar {
-  display: none; /* overridden by .logged-in */
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 0.5rem;
-}
-
-.refresh-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--fg);
-  font-size: 0.85rem;
-  padding: 0.35em 0.8em;
-  border-radius: 6px;
-  opacity: 0.65;
-  transition: opacity 0.2s ease;
-}
-
-.refresh-btn:hover { opacity: 1; }
-
-/* ── Tools panel (<details> collapsible) ───────────────────────────── */
-#tools-panel {
-  display: none; /* overridden by .logged-in */
-  margin-bottom: 1.25rem;
-}
-
-#tools-panel summary {
-  cursor: pointer;
-  color: var(--primary);
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.55em 0;
-  user-select: none;
-  list-style: none; /* hide default triangle */
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-}
-
-#tools-panel summary::-webkit-details-marker { display: none; }
-
-#tools-panel summary::after {
-  content: '▾';
-  font-size: 0.75em;
-  transition: transform 0.2s ease;
-}
-
-#tools-panel[open] summary::after {
-  transform: rotate(-180deg);
-}
-
-.tools-buttons {
-  padding-top: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0; /* pdf-button already has margin-top */
-}
-
-/* ── Floating action button ─────────────────────────────────────────── */
-#fab-add {
-  display: none; /* overridden by .logged-in */
-  position: fixed;
-  bottom: max(1.5rem, env(safe-area-inset-bottom, 0px) + 1rem);
-  right: 1.5rem;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #000;
-  font-size: 2rem;
-  font-weight: 400;
-  line-height: 1;
-  border: none;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(255, 136, 0, 0.35);
-  z-index: 500;
-  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-}
-
-#fab-add:hover {
-  background: #e67600;
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(255, 136, 0, 0.45);
-}
-
-#fab-add:active { transform: scale(0.93); }
-
-/* ── Form modal ─────────────────────────────────────────────────────── */
-.form-modal-content {
-  /* Override the base .modal-content sizing for this tall form */
-  width: min(540px, 100%);
-  max-height: min(92vh, 760px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  gap: 0;
-}
-
-.form-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem 0.75rem;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.form-modal-header h3 {
-  margin: 0;
-  font-size: 1.15rem;
-}
-
-#form-modal-close {
-  background: none;
-  border: none;
-  font-size: 1.7rem;
-  line-height: 1;
-  color: var(--fg);
-  opacity: 0.55;
-  padding: 0 0.1em;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-#form-modal-close:hover { opacity: 1; }
-
-/* The form inside the modal gets its own padding and scroll area */
-#form-modal #log-form {
-  padding: 1.25rem 1.5rem 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-/* On small screens give the modal a bit of room to breathe */
-@media (max-width: 480px) {
-  .form-modal-content {
-    max-height: 96vh;
-    border-radius: 1rem 1rem 0 0;
-  }
-
-  /* Snap modal to bottom on phones */
-  #form-modal {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  #form-modal .form-modal-content {
-    width: 100%;
-  }
-}
 
 
 /* ── Logged-in state: hide landing content ──────────────────────────── */
@@ -1095,3 +931,16 @@ button.sign:hover { background: #2e7d32 !important; }
 /* Hide the cancel button by default; JS shows it in edit mode */
 #form-cancel-btn { display: none; }
 
+/* ── Mobile: snap form modal to bottom ─────────────────────────────── */
+@media (max-width: 480px) {
+  #form-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .form-modal-content {
+    max-height: 96vh;
+    border-radius: 1rem 1rem 0 0;
+    width: 100%;
+  }
+}
