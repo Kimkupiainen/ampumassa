@@ -371,7 +371,7 @@
       const isRole = ROLE_TYPES.has(typeValue);
       const block = document.getElementById('weapon-fields');
       block.style.display = isRole ? 'none' : '';
-      ['caliber', 'weapon', 'tt'].forEach(id => {
+      ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
         document.getElementById(id).required = !isRole;
       });
     }
