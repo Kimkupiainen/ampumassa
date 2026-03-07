@@ -31,9 +31,8 @@
     <br>Ampumapäiväkirja netissä
   </h1>
 
-  <div id="login">
-    <button id="login-btn">Kirjaudu Google-tilillä</button>
-  </div>
+  <div id="login"></div>
+  <button id="login-btn">Kirjaudu Google-tilillä</button>
 
   <div id="intro">
     <p>
@@ -125,6 +124,8 @@
 
           <input type="number" id="rounds" placeholder="Laukaukset" required min="0">
         </div>
+        <input list="locations" id="location" placeholder="Paikka" required>
+        <datalist id="locations"></datalist>
         <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
 
         <div class="form-actions">
