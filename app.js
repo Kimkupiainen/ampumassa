@@ -3,6 +3,8 @@
   const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
   const SHEET_NAME = 'ampumapaivakirja';
   const SHEET_TAB = 'Merkinnät';
+  // Non-shooting activity types — weapon/caliber/TT/rounds fields are hidden for these
+  const ROLE_TYPES = new Set(['Toimitsija', 'Valmentaja', 'Kouluttaja', 'Tuomarointi']);
   let accessToken = null;
   let spreadsheetId = null;
   let editingRow = null;
@@ -362,28 +364,44 @@
       tokenClient.requestAccessToken();
     };
 
+    // Toggle weapon-specific fields when a role (non-shooting) type is selected
+    function applyTypeMode(typeValue) {
+      const isRole = ROLE_TYPES.has(typeValue);
+      const block = document.getElementById('weapon-fields');
+      block.style.display = isRole ? 'none' : '';
+      ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
+        document.getElementById(id).required = !isRole;
+      });
+      if (isRole) document.getElementById('rounds').value = '0';
+    }
+    document.getElementById('type').addEventListener('change', e => applyTypeMode(e.target.value));
+
     document.getElementById('log-form').addEventListener('submit', async (e) => {
       showLoader();
       e.preventDefault();
 
+      const typeValue = document.getElementById('type').value;
+      const isRole    = ROLE_TYPES.has(typeValue);
       const dateInput = document.getElementById('date').value;
       const excelDate = (new Date(dateInput) - new Date("1899-12-30")) / (1000 * 60 * 60 * 24);
 
       const row = [
         { userEnteredValue: { numberValue: excelDate }, userEnteredFormat: { numberFormat: { type: "DATE", pattern: "yyyy-mm-dd" } } },
         { userEnteredValue: { stringValue: document.getElementById('event').value } },
-        { userEnteredValue: { stringValue: document.getElementById('type').value } },
-        { userEnteredValue: { stringValue: document.getElementById('caliber').value } },
-        { userEnteredValue: { stringValue: document.getElementById('weapon').value } },
-        { userEnteredValue: { stringValue: document.getElementById('tt').value } },
+        { userEnteredValue: { stringValue: typeValue } },
+        { userEnteredValue: { stringValue: isRole ? '' : document.getElementById('caliber').value } },
+        { userEnteredValue: { stringValue: isRole ? '' : document.getElementById('weapon').value } },
+        { userEnteredValue: { stringValue: isRole ? '' : document.getElementById('tt').value } },
         { userEnteredValue: { stringValue: document.getElementById('location').value } },
-        { userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) } },
+        { userEnteredValue: { numberValue: isRole ? 0 : Number(document.getElementById('rounds').value) } },
         { userEnteredValue: { stringValue: document.getElementById('notes').value } }
       ];
 
-      saveToLocalStorage("weapons", document.getElementById('weapon').value);
+      if (!isRole) {
+        saveToLocalStorage("weapons", document.getElementById('weapon').value);
+        saveToLocalStorage("calibers", document.getElementById('caliber').value);
+      }
       saveToLocalStorage("locations", document.getElementById('location').value);
-      saveToLocalStorage("calibers", document.getElementById('caliber').value);
 
       try {
         const sheetId = await getSheetIdByTitle(SHEET_TAB);
@@ -449,7 +467,12 @@
         const yearRows = allRows.filter(r => new Date(r[0]) >= yearStart);
         const yearRounds = yearRows.reduce((s, r) => s + (parseInt(r[7]) || 0), 0);
         const ttCounts = {};
-        yearRows.forEach(r => { const tt = r[5] || 'Muu'; ttCounts[tt] = (ttCounts[tt] || 0) + 1; });
+        yearRows.forEach(r => {
+          // Role entries (Toimitsija, Valmentaja, Kouluttaja, Tuomarointi) are stored in
+          // r[2] (type) and have an empty TT field — show the role name, not TT.
+          const key = ROLE_TYPES.has(r[2]) ? r[2] : (r[5] || 'Muu');
+          ttCounts[key] = (ttCounts[key] || 0) + 1;
+        });
         const ttSummary = Object.entries(ttCounts)
           .sort((a, b) => a[0].localeCompare(b[0]))
           .map(([tt, n]) => `${escapeHTML(tt)}: ${n}`)
@@ -481,17 +504,24 @@
           title.textContent = `${r[0] || ''} – ${r[1] || ''}`;
           card.appendChild(title);
 
+          const isRoleEntry = ROLE_TYPES.has(r[2]);
           const weaponInfo = document.createElement('p');
-          weaponInfo.textContent = `Ase: ${r[4] || ''} | ${r[2] || ''} ${r[3] || ''} | ${r[5] || ''}`;
+          if (isRoleEntry) {
+            weaponInfo.textContent = `Rooli: ${r[2]}`;
+          } else {
+            weaponInfo.textContent = `Ase: ${r[4] || ''} | ${r[2] || ''} ${r[3] || ''} | ${r[5] || ''}`;
+          }
           card.appendChild(weaponInfo);
 
           const location = document.createElement('p');
           location.textContent = `Paikka: ${r[6] || ''}`;
           card.appendChild(location);
 
-          const rounds = document.createElement('p');
-          rounds.textContent = `Laukaukset: ${r[7] || ''}`;
-          card.appendChild(rounds);
+          if (!isRoleEntry) {
+            const rounds = document.createElement('p');
+            rounds.textContent = `Laukaukset: ${r[7] || ''}`;
+            card.appendChild(rounds);
+          }
 
           if (r[8]) {
             const notes = document.createElement('p');
@@ -674,6 +704,8 @@
         }
         el.value = value;
       });
+      // Restore weapon-field visibility/required state based on loaded type
+      applyTypeMode(document.getElementById('type').value);
 
       editingRow = index;
       openFormModal('Muokkaa merkintää', true);
@@ -1323,9 +1355,11 @@
     // Groups: (1)num (2)disc+session (3)weaponType (4)tt? (5)model (6)caliber (7)rounds
     const PERF_LINE = /^(\d+)\.\s+(.+?)\s+(Pistooli|Kiv\u00e4\u00e4ri|Haulikko|Pienoiskiv\u00e4\u00e4ri|Pienoispistooli|Muu)\s+-\s+(?:(TT\d+)(?:\s*\(\d+\))?\s+)?(.+?),\s*(\S+(?:\s+[^\d\s]\S*)?)\s+(\d+)\s+laukausta/i;
 
-    // Tuomarointi / officiating entry — no weapon model, no TT, no shots fired.
+    // Non-shooting role entries — Tuomarointi, Toimitsija, Valmentaja, Kouluttaja.
+    // No weapon model, no TT, no shots fired.
     // "N. Tuomarointi WeaponType(count)[, WeaponType(count)...] [event/description]"
-    const TUOMAROINTI_LINE = /^(\d+)\.\s+(Tuomarointi)\s*(.*)/i;
+    // "N. Valmentaja [description]"
+    const TUOMAROINTI_LINE = /^(\d+)\.\s+(Tuomarointi|Toimitsija|Valmentaja|Kouluttaja)\s*(.*)/i;
 
     // Lines to skip (page headers, user-info box, verification text, metadata)
     const SKIP = /^(Tulostettu|Tulostemallin versio|Ampuma\s+[-\u2013]\s+s\u00e4hk\u00f6inen|K\u00e4ytt\u00e4j\u00e4tietojen versio|Merkinn\u00e4n tiiviste|P\u00e4iv\u00e4kirjamerkint\u00e4 lis\u00e4tty|Ampuma\.com|K\u00e4ytt\u00e4j\u00e4n tiedot|K\u00e4ytt\u00e4j\u00e4n unikki|Voit |Etunimi|Sukunimi|Tulosteen tunniste|Ampuman k\u00e4ytt\u00f6|T\u00e4m\u00e4 ampuma|Ne sis\u00e4lt\u00e4v\u00e4t|P\u00e4iv\u00e4kirjamerkinn\u00e4t on|Suorituksissa|Suorituksen laukausten|Ampuman avulla|Suoritukset jakautuivat|K\u00e4ytt\u00e4j\u00e4tunnus|K\u00e4ytt\u00e4j\u00e4tietojen nykyinen|allekirjoitettu digitaalisesti|\d+\s*\(\d+\))/i;
@@ -1397,27 +1431,26 @@
         continue;
       }
 
-      // Tuomarointi / officiating — no single weapon, no TT, 0 shots
+      // Non-shooting role entry (Tuomarointi, Toimitsija, Valmentaja, Kouluttaja)
       const tm = line.match(TUOMAROINTI_LINE);
       if (tm) {
         flush();
-        const rest = tm[3].trim();
-        // rest typically: "Haulikko (1), Kivääri (9), Pistooli (14) EventName Description"
-        // Split weapon-type tokens from the trailing event/description text
-        const weaponMatch = rest.match(/^((?:(?:Haulikko|Kiv\u00e4\u00e4ri|Pistooli|Pienoiskiv\u00e4\u00e4ri|Muu)\s*\(\d+\)(?:,\s*)?)+)/i);
-        const weaponTypes = weaponMatch ? weaponMatch[1].replace(/\s*\(\d+\)/g, '').replace(/,\s*/g, ', ').trim() : '';
-        const desc        = weaponMatch ? rest.slice(weaponMatch[0].length).trim() : rest;
+        const roleType = tm[2];   // e.g. "Tuomarointi", "Valmentaja"
+        const rest     = tm[3].trim();
+        // For Tuomarointi, rest may begin with weapon-type counts: "Haulikko (1), Kivääri (9)…"
+        const weaponMatch = rest.match(/^((?:(?:Haulikko|Kiv\u00e4\u00e4ri|Pistooli|Pienoiskiv\u00e4\u00e4ri|Pienoispistooli|Muu)\s*\(\d+\)(?:,\s*)?)+)/i);
+        const desc = weaponMatch ? rest.slice(weaponMatch[0].length).trim() : rest;
         currentRow = [
-          date        || '',
-          'Tuomarointi',
-          weaponTypes || 'Tuomarointi',
-          '',           // caliber — not applicable
-          '',           // model  — not applicable
-          '',           // TT    — not applicable
-          location    || '',
-          '0',          // 0 shots fired
-          desc,         // event name / description
-          ''            // signature
+          date     || '',
+          roleType,           // r[1] = event/activity (the role name)
+          roleType,           // r[2] = type (used for role detection in stats/cards)
+          '',                 // caliber — not applicable
+          '',                 // model  — not applicable
+          '',                 // TT    — not applicable
+          location || '',
+          '0',                // 0 shots fired
+          desc,               // notes: description / event name
+          ''                  // signature
         ];
         continue;
       }
