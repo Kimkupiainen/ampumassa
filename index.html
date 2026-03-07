@@ -92,32 +92,39 @@
         <input type="text" id="event" placeholder="Tapahtuma" required>
 
         <select id="type" required>
-          <option value="">Valitse asetyyppi</option>
-          <option value="Pistooli">Pistooli</option>
-          <option value="Kivääri">Kivääri</option>
-          <option value="Haulikko">Haulikko</option>
-          <option value="Pienoiskivääri">Pienoiskivääri</option>
-          <option value="Muu">Muu</option>
+          <option value="">Valitse tyyppi</option>
+          <optgroup label="Asetyyppi">
+            <option value="Pistooli">Pistooli</option>
+            <option value="Kivääri">Kivääri</option>
+            <option value="Haulikko">Haulikko</option>
+            <option value="Pienoiskivääri">Pienoiskivääri</option>
+            <option value="Pienoispistooli">Pienoispistooli</option>
+            <option value="Muu">Muu ase</option>
+          </optgroup>
+          <optgroup label="Rooli">
+            <option value="Toimitsija">Toimitsija / Tuomari</option>
+            <option value="Valmentaja">Valmentaja</option>
+            <option value="Kouluttaja">Kouluttaja</option>
+          </optgroup>
         </select>
 
-        <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
-        <datalist id="calibers"></datalist>
+        <div id="weapon-fields">
+          <input list="calibers" id="caliber" placeholder="Kaliiperi (esim. 9mm, .22LR)" required>
+          <datalist id="calibers"></datalist>
 
-        <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
-        <datalist id="weapons"></datalist>
+          <input list="weapons" id="weapon" placeholder="Ase / mallinimi" required>
+          <datalist id="weapons"></datalist>
 
-        <select id="tt" required>
-          <option value="">Valitse toimintatapa</option>
-          <option value="TT1">TT1 – kertatuli ilman lipasta</option>
-          <option value="TT2">TT2 – kertatuli lippaalla</option>
-          <option value="TT3">TT3 – itselataava kertatuli</option>
-          <option value="TT4">TT4 – sarjatuli</option>
-        </select>
+          <select id="tt" required>
+            <option value="">Valitse toimintatapa</option>
+            <option value="TT1">TT1 – kertatuli ilman lipasta</option>
+            <option value="TT2">TT2 – kertatuli lippaalla</option>
+            <option value="TT3">TT3 – itselataava kertatuli</option>
+            <option value="TT4">TT4 – sarjatuli</option>
+          </select>
 
-        <input list="locations" id="location" placeholder="Paikka" required>
-        <datalist id="locations"></datalist>
-
-        <input type="number" id="rounds" placeholder="Laukaukset" required>
+          <input type="number" id="rounds" placeholder="Laukaukset" required min="0">
+        </div>
         <textarea id="notes" placeholder="Kuvaus / huomiot"></textarea>
 
         <div class="form-actions">
