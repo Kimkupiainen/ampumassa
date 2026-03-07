@@ -369,10 +369,9 @@
       const isRole = ROLE_TYPES.has(typeValue);
       const block = document.getElementById('weapon-fields');
       block.style.display = isRole ? 'none' : '';
-      ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
+      ['caliber', 'weapon', 'tt'].forEach(id => {
         document.getElementById(id).required = !isRole;
       });
-      if (isRole) document.getElementById('rounds').value = '0';
     }
     document.getElementById('type').addEventListener('change', e => applyTypeMode(e.target.value));
 
@@ -393,7 +392,7 @@
         { userEnteredValue: { stringValue: isRole ? '' : document.getElementById('weapon').value } },
         { userEnteredValue: { stringValue: isRole ? '' : document.getElementById('tt').value } },
         { userEnteredValue: { stringValue: document.getElementById('location').value } },
-        { userEnteredValue: { numberValue: isRole ? 0 : Number(document.getElementById('rounds').value) } },
+        { userEnteredValue: { numberValue: Number(document.getElementById('rounds').value) || 0 } },
         { userEnteredValue: { stringValue: document.getElementById('notes').value } }
       ];
 
@@ -517,9 +516,9 @@
           location.textContent = `Paikka: ${r[6] || ''}`;
           card.appendChild(location);
 
-          if (!isRoleEntry) {
+          if (r[7] > 0) {
             const rounds = document.createElement('p');
-            rounds.textContent = `Laukaukset: ${r[7] || ''}`;
+            rounds.textContent = `Laukaukset: ${r[7]}`;
             card.appendChild(rounds);
           }
 
