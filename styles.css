@@ -184,6 +184,7 @@ form button[type="submit"] {
   border: none;
   border-radius: 8px;
   padding: 0.85em 1.25em;
+  touch-action: manipulation;
   margin-bottom: 0.75rem;
   transition: background 0.2s ease, transform 0.1s ease;
 }

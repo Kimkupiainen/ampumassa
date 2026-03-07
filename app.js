@@ -377,14 +377,6 @@
     }
     document.getElementById('type').addEventListener('change', e => applyTypeMode(e.target.value));
 
-    // On mobile, the first tap on the submit button often just dismisses the keyboard
-    // and the tap is lost due to page scroll/reflow. touchend fires before the scroll,
-    // so we use it to explicitly trigger form submission.
-    document.querySelector('#log-form button[type="submit"]').addEventListener('touchend', (e) => {
-      e.preventDefault();
-      document.getElementById('log-form').requestSubmit();
-    }, { passive: false });
-
     document.getElementById('log-form').addEventListener('submit', async (e) => {
       showLoader();
       e.preventDefault();
