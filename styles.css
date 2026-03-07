@@ -335,9 +335,20 @@ button.delete:hover { background: #b71c1c !important; }
 /* ── Status message ─────────────────────────────────────────────────── */
 #status {
   min-height: 1.4em;
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-top: 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: opacity 0.3s;
+}
+#status.status-ok {
+  background: #d4edda;
+  color: #155724;
+}
+#status.status-error {
+  background: #f8d7da;
+  color: #721c24;
 }
 
 /* ── Inline form spinner ─────────────────────────────────────────────── */

@@ -89,7 +89,8 @@
   function showStatus(msg, isError = false) {
     const el = document.getElementById('status');
     el.textContent = msg;
-    el.style.color = isError ? '#e74c3c' : '';
+    el.className = isError ? 'status-error' : 'status-ok';
+    if (!isError) setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
   }
 
   // Called when a 401 comes back from any API request
@@ -242,21 +243,22 @@
     let raporttiSheetId;
 
     if (existingSheet) {
-      raporttiSheetId = existingSheet.properties.sheetId;
-    } else {
-      const addSheetData = await apiFetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requests: [{ addSheet: { properties: { title: "Raportti" } } }] })
-        }
-      );
-      raporttiSheetId = addSheetData.replies?.[0]?.addSheet?.properties?.sheetId;
-      if (!raporttiSheetId) {
-        console.error("Raportti-välilehden luonti epäonnistui.");
-        return;
+      // Sheet already exists — don't overwrite user's custom formulas
+      return;
+    }
+
+    const addSheetData = await apiFetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests: [{ addSheet: { properties: { title: "Raportti" } } }] })
       }
+    );
+    raporttiSheetId = addSheetData.replies?.[0]?.addSheet?.properties?.sheetId;
+    if (!raporttiSheetId) {
+      console.error("Raportti-välilehden luonti epäonnistui.");
+      return;
     }
 
     // Write correct formulas every login so stale/wrong formulas get fixed automatically
@@ -375,6 +377,14 @@
     }
     document.getElementById('type').addEventListener('change', e => applyTypeMode(e.target.value));
 
+    // On mobile, the first tap on the submit button often just dismisses the keyboard
+    // and the tap is lost due to page scroll/reflow. touchend fires before the scroll,
+    // so we use it to explicitly trigger form submission.
+    document.querySelector('#log-form button[type="submit"]').addEventListener('touchend', (e) => {
+      e.preventDefault();
+      document.getElementById('log-form').requestSubmit();
+    }, { passive: false });
+
     document.getElementById('log-form').addEventListener('submit', async (e) => {
       showLoader();
       e.preventDefault();
@@ -436,7 +446,6 @@
         });
 
         document.getElementById('form-modal').style.display = 'none';
-        showConfirmation(row.map(c => c.userEnteredValue?.stringValue ?? c.userEnteredValue?.numberValue ?? ''));
         document.getElementById('log-form').reset();
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
         showStatus('Merkintä tallennettu.');
@@ -552,7 +561,13 @@
         });
       } catch (err) {
         if (err.message !== 'TOKEN_EXPIRED') {
-          showStatus('Merkintöjen lataus epäonnistui. Tarkista verkkoyhteytesi.', true);
+          // Retry once after 2s in case of transient API error (e.g. right after login writes)
+          if (!loadEntries._retrying) {
+            loadEntries._retrying = true;
+            setTimeout(() => { loadEntries._retrying = false; loadEntries(); }, 2000);
+          } else {
+            showStatus('Merkintöjen lataus epäonnistui. Tarkista verkkoyhteytesi.', true);
+          }
         }
       } finally {
         document.getElementById('global-loader').style.display = 'none';
