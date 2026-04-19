@@ -45,6 +45,7 @@
   function cancelEdit() {
     document.getElementById('log-form').reset();
     editingRow = null;
+    applyTypeMode('');
     document.getElementById('form-modal').style.display = 'none';
     showStatus('');
   }
@@ -674,6 +675,7 @@
     document.getElementById('fab-add').onclick = () => {
       document.getElementById('log-form').reset();
       editingRow = null;
+      applyTypeMode('');
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('date').value = today;
       openFormModal('Uusi merkintä', false);
