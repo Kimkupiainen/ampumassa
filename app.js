@@ -86,6 +86,15 @@
     document.getElementById('loader').style.display = 'none';
   }
 
+  function applyTypeMode(typeValue) {
+    const isRole = ROLE_TYPES.has(typeValue);
+    const block = document.getElementById('weapon-fields');
+    block.style.display = isRole ? 'none' : '';
+    ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
+      document.getElementById(id).required = !isRole;
+    });
+  }
+
   // Centralised status helper — red text on errors, normal otherwise
   function showStatus(msg, isError = false) {
     const el = document.getElementById('status');
@@ -367,15 +376,6 @@
       tokenClient.requestAccessToken();
     };
 
-    // Toggle weapon-specific fields when a role (non-shooting) type is selected
-    function applyTypeMode(typeValue) {
-      const isRole = ROLE_TYPES.has(typeValue);
-      const block = document.getElementById('weapon-fields');
-      block.style.display = isRole ? 'none' : '';
-      ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
-        document.getElementById(id).required = !isRole;
-      });
-    }
     document.getElementById('type').addEventListener('change', e => applyTypeMode(e.target.value));
 
     document.getElementById('log-form').addEventListener('submit', async (e) => {
