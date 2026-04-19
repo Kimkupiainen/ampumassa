@@ -86,6 +86,15 @@
     document.getElementById('loader').style.display = 'none';
   }
 
+  function applyTypeMode(typeValue) {
+    const isRole = ROLE_TYPES.has(typeValue);
+    const block = document.getElementById('weapon-fields');
+    block.style.display = isRole ? 'none' : '';
+    ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
+      document.getElementById(id).required = !isRole;
+    });
+  }
+
   // Centralised status helper — red text on errors, normal otherwise
   function showStatus(msg, isError = false) {
     const el = document.getElementById('status');
@@ -367,15 +376,6 @@
       tokenClient.requestAccessToken();
     };
 
-    // Toggle weapon-specific fields when a role (non-shooting) type is selected
-    function applyTypeMode(typeValue) {
-      const isRole = ROLE_TYPES.has(typeValue);
-      const block = document.getElementById('weapon-fields');
-      block.style.display = isRole ? 'none' : '';
-      ['caliber', 'weapon', 'tt', 'rounds'].forEach(id => {
-        document.getElementById(id).required = !isRole;
-      });
-    }
     document.getElementById('type').addEventListener('change', e => applyTypeMode(e.target.value));
 
     document.getElementById('log-form').addEventListener('submit', async (e) => {
@@ -698,6 +698,7 @@
   };
 
   window.editRow = async (index) => {
+    showLoader();
     try {
       const data = await apiFetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:I${index + 1}`
@@ -712,15 +713,17 @@
         }
         el.value = value;
       });
-      // Restore weapon-field visibility/required state based on loaded type
       applyTypeMode(document.getElementById('type').value);
 
       editingRow = index;
       openFormModal('Muokkaa merkintää', true);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
+        openFormModal('Muokkaa merkintää', true);
         showStatus('Rivin lataus epäonnistui.', true);
       }
+    } finally {
+      hideLoader();
     }
   };
 
