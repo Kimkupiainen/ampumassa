@@ -698,6 +698,7 @@
   };
 
   window.editRow = async (index) => {
+    showLoader();
     try {
       const data = await apiFetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${SHEET_TAB}!A${index + 1}:I${index + 1}`
@@ -712,15 +713,17 @@
         }
         el.value = value;
       });
-      // Restore weapon-field visibility/required state based on loaded type
       applyTypeMode(document.getElementById('type').value);
 
       editingRow = index;
       openFormModal('Muokkaa merkintää', true);
     } catch (err) {
       if (err.message !== 'TOKEN_EXPIRED') {
+        openFormModal('Muokkaa merkintää', true);
         showStatus('Rivin lataus epäonnistui.', true);
       }
+    } finally {
+      hideLoader();
     }
   };
 
